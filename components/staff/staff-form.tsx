@@ -8,11 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import Link from "next/link";
 
 const ROLES = [
-  { value: "ADMIN", label: "Администратор" },
-  { value: "MANAGER", label: "Менеджер" },
-  { value: "MEASURER", label: "Замерщик" },
-  { value: "INSTALLER", label: "Монтажник" },
-  { value: "PRODUCTION", label: "Производство" },
+  { value: "ADMIN",              label: "Администратор" },
+  { value: "MANAGER",            label: "Менеджер" },
+  { value: "MEASURER",           label: "Замерщик" },
+  { value: "INSTALLER",          label: "Монтажник" },
+  { value: "PRODUCTION",         label: "Мастер производства" },
+  { value: "PRODUCTION_GLASS",   label: "Цех стекла" },
+  { value: "PRODUCTION_PVC",     label: "Цех ПВХ" },
+  { value: "PRODUCTION_ALUMINUM","label": "Цех алюминия" },
 ];
 
 type Props = {

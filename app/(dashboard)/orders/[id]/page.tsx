@@ -26,7 +26,8 @@ export default async function OrderPage({ params }: Props) {
   if (!order) notFound();
 
   const session = await getSession();
-  const isProduction = session?.role === "PRODUCTION";
+  const PRODUCTION_ROLES = new Set(["PRODUCTION", "PRODUCTION_GLASS", "PRODUCTION_PVC", "PRODUCTION_ALUMINUM"]);
+  const isProduction = PRODUCTION_ROLES.has(session?.role ?? "");
 
   const paid = order.payments.reduce((s, p) => s + Number(p.amount), 0);
   const debt = Number(order.totalAmount) - paid;

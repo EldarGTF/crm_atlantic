@@ -4,8 +4,10 @@ import { Package } from "lucide-react";
 import { getSession } from "@/lib/session";
 
 export default async function ProductionPage() {
-  const [orders, session] = await Promise.all([getProductionOrders(), getSession()]);
+  const session = await getSession();
   const role = session?.role ?? "MANAGER";
+
+  const orders = await getProductionOrders(role);
 
   const waiting = orders.filter((o) => o.lead.status === "SENT_TO_PRODUCTION");
   const inWork = orders.filter((o) => o.lead.status === "IN_PRODUCTION");
@@ -13,7 +15,7 @@ export default async function ProductionPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-2xl font-bold text-gray-900">Производство</h1>
         <div className="flex gap-3 text-sm text-gray-500">
           <span className="flex items-center gap-1">

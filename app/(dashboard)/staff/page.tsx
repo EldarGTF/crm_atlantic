@@ -6,17 +6,25 @@ import { ToggleActiveButton } from "@/components/staff/toggle-active-button";
 import { Plus, Mail, Phone, Pencil } from "lucide-react";
 
 const ROLE_LABELS: Record<string, string> = {
-  ADMIN: "Администратор",
-  MANAGER: "Менеджер",
-  MEASURER: "Замерщик",
-  INSTALLER: "Монтажник",
+  ADMIN:              "Администратор",
+  MANAGER:            "Менеджер",
+  MEASURER:           "Замерщик",
+  INSTALLER:          "Монтажник",
+  PRODUCTION:         "Мастер производства",
+  PRODUCTION_GLASS:   "Цех стекла",
+  PRODUCTION_PVC:     "Цех ПВХ",
+  PRODUCTION_ALUMINUM:"Цех алюминия",
 };
 
 const ROLE_COLORS: Record<string, string> = {
-  ADMIN: "bg-purple-100 text-purple-700 border-purple-200",
-  MANAGER: "bg-blue-100 text-blue-700 border-blue-200",
-  MEASURER: "bg-amber-100 text-amber-700 border-amber-200",
-  INSTALLER: "bg-green-100 text-green-700 border-green-200",
+  ADMIN:              "bg-purple-100 text-purple-700 border-purple-200",
+  MANAGER:            "bg-blue-100 text-blue-700 border-blue-200",
+  MEASURER:           "bg-amber-100 text-amber-700 border-amber-200",
+  INSTALLER:          "bg-green-100 text-green-700 border-green-200",
+  PRODUCTION:         "bg-slate-100 text-slate-700 border-slate-200",
+  PRODUCTION_GLASS:   "bg-cyan-100 text-cyan-700 border-cyan-200",
+  PRODUCTION_PVC:     "bg-violet-100 text-violet-700 border-violet-200",
+  PRODUCTION_ALUMINUM:"bg-orange-100 text-orange-700 border-orange-200",
 };
 
 export default async function StaffPage() {

@@ -161,7 +161,14 @@ export async function archiveOrder(orderId: string, leadId: string) {
   redirect("/leads");
 }
 
-export async function sendToProduction(orderId: string, leadId: string) {
+export async function sendToProduction(orderId: string, leadId: string, depts: string[]) {
+  if (!depts.length) return { message: "Выберите хотя бы один цех" };
+
+  await prisma.orderProductionDept.deleteMany({ where: { orderId } });
+  await prisma.orderProductionDept.createMany({
+    data: depts.map((dept) => ({ orderId, dept: dept as "GLASS" | "PVC" | "ALUMINUM" })),
+  });
+
   await prisma.lead.update({
     where: { id: leadId },
     data: {
@@ -169,11 +176,20 @@ export async function sendToProduction(orderId: string, leadId: string) {
       statusHistory: { create: { status: "SENT_TO_PRODUCTION", note: "Заказ отправлен в производство" } },
     },
   });
-  sendPushToRole("PRODUCTION", {
-    title: "Новый заказ в производство",
-    body: "Заказ поступил в производство",
-    url: "/production",
-  }).catch(() => {});
+
+  const deptRoleMap: Record<string, string> = {
+    GLASS: "PRODUCTION_GLASS",
+    PVC: "PRODUCTION_PVC",
+    ALUMINUM: "PRODUCTION_ALUMINUM",
+  };
+  const pushRoles = ["PRODUCTION", ...depts.map((d) => deptRoleMap[d]).filter(Boolean)];
+  for (const role of pushRoles) {
+    sendPushToRole(role, {
+      title: "Новый заказ в производство",
+      body: "Заказ поступил в производство",
+      url: "/production",
+    }).catch(() => {});
+  }
 
   revalidatePath(`/orders/${orderId}`);
   revalidatePath(`/leads/${leadId}`);

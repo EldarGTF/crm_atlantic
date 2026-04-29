@@ -11,7 +11,7 @@ import { logout } from "@/app/actions/auth";
 import { cn } from "@/lib/utils";
 import { PushSubscribeButton } from "@/components/push-subscribe-button";
 
-type Role = "ADMIN" | "MANAGER" | "MEASURER" | "INSTALLER" | "PRODUCTION";
+type Role = "ADMIN" | "MANAGER" | "MEASURER" | "INSTALLER" | "PRODUCTION" | "PRODUCTION_GLASS" | "PRODUCTION_PVC" | "PRODUCTION_ALUMINUM";
 
 const navGroups = [
   {
@@ -27,14 +27,14 @@ const navGroups = [
     items: [
       { href: "/measurements", label: "Замеры",       icon: Ruler,           roles: ["ADMIN", "MANAGER", "MEASURER"] },
       { href: "/orders",       label: "Заказы",       icon: Package,         roles: ["ADMIN", "MANAGER"] },
-      { href: "/production",   label: "Производство", icon: Wrench,          roles: ["ADMIN", "MANAGER", "PRODUCTION"] },
+      { href: "/production",   label: "Производство", icon: Wrench,          roles: ["ADMIN", "MANAGER", "PRODUCTION", "PRODUCTION_GLASS", "PRODUCTION_PVC", "PRODUCTION_ALUMINUM"] },
       { href: "/installation", label: "Монтаж",       icon: HardHat,         roles: ["ADMIN", "MANAGER", "INSTALLER"] },
     ],
   },
   {
     label: "Управление",
     items: [
-      { href: "/tasks",        label: "Задачи",       icon: CheckSquare,     roles: ["ADMIN", "MANAGER", "MEASURER", "INSTALLER", "PRODUCTION"] },
+      { href: "/tasks",        label: "Задачи",       icon: CheckSquare,     roles: ["ADMIN", "MANAGER", "MEASURER", "INSTALLER", "PRODUCTION", "PRODUCTION_GLASS", "PRODUCTION_PVC", "PRODUCTION_ALUMINUM"] },
       { href: "/archive",      label: "Архив",        icon: Archive,         roles: ["ADMIN", "MANAGER"] },
       { href: "/staff",        label: "Сотрудники",   icon: UserCog,         roles: ["ADMIN"] },
     ],

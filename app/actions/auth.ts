@@ -40,7 +40,10 @@ export async function login(
     MANAGER:    "/dashboard",
     MEASURER:   "/measurements",
     INSTALLER:  "/installation",
-    PRODUCTION: "/production",
+    PRODUCTION:          "/production",
+    PRODUCTION_GLASS:    "/production",
+    PRODUCTION_PVC:      "/production",
+    PRODUCTION_ALUMINUM: "/production",
   };
   redirect(homeByRole[user.role] ?? "/dashboard");
 }

@@ -7,12 +7,12 @@ const ROUTE_ROLES: Record<string, string[]> = {
   "/staff":        ["ADMIN"],
   "/leads":        ["ADMIN", "MANAGER"],
   "/clients":      ["ADMIN", "MANAGER"],
-  "/orders":       ["ADMIN", "MANAGER", "PRODUCTION"],
-  "/production":   ["ADMIN", "MANAGER", "PRODUCTION"],
+  "/orders":       ["ADMIN", "MANAGER", "PRODUCTION", "PRODUCTION_GLASS", "PRODUCTION_PVC", "PRODUCTION_ALUMINUM"],
+  "/production":   ["ADMIN", "MANAGER", "PRODUCTION", "PRODUCTION_GLASS", "PRODUCTION_PVC", "PRODUCTION_ALUMINUM"],
   "/archive":      ["ADMIN", "MANAGER"],
   "/measurements": ["ADMIN", "MANAGER", "MEASURER"],
   "/installation": ["ADMIN", "MANAGER", "INSTALLER"],
-  "/tasks":        ["ADMIN", "MANAGER", "MEASURER", "INSTALLER", "PRODUCTION"],
+  "/tasks":        ["ADMIN", "MANAGER", "MEASURER", "INSTALLER", "PRODUCTION", "PRODUCTION_GLASS", "PRODUCTION_PVC", "PRODUCTION_ALUMINUM"],
   "/dashboard":    ["ADMIN", "MANAGER"],
 };
 
@@ -21,7 +21,10 @@ const HOME_BY_ROLE: Record<string, string> = {
   MANAGER:    "/dashboard",
   MEASURER:   "/measurements",
   INSTALLER:  "/installation",
-  PRODUCTION: "/production",
+  PRODUCTION:          "/production",
+  PRODUCTION_GLASS:    "/production",
+  PRODUCTION_PVC:      "/production",
+  PRODUCTION_ALUMINUM: "/production",
 };
 
 export async function proxy(request: NextRequest) {

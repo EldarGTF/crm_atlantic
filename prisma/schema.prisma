@@ -15,6 +15,15 @@ enum Role {
   MEASURER
   INSTALLER
   PRODUCTION
+  PRODUCTION_GLASS
+  PRODUCTION_PVC
+  PRODUCTION_ALUMINUM
+}
+
+enum ProductionDept {
+  GLASS
+  PVC
+  ALUMINUM
 }
 
 // ─── Пользователи ────────────────────────────────────────────────────────────
@@ -184,16 +193,34 @@ model Order {
   createdAt            DateTime      @default(now())
   updatedAt            DateTime      @updatedAt
 
-  lead         Lead          @relation(fields: [leadId], references: [id])
-  client       Client        @relation(fields: [clientId], references: [id])
-  items        OrderItem[]
-  extraWorks   ExtraWork[]
-  payments     Payment[]
-  files        OrderFile[]
-  installation Installation?
-  act          Act?
+  lead            Lead                  @relation(fields: [leadId], references: [id])
+  client          Client                @relation(fields: [clientId], references: [id])
+  items           OrderItem[]
+  extraWorks      ExtraWork[]
+  payments        Payment[]
+  files           OrderFile[]
+  installation    Installation?
+  act             Act?
+  productionDepts OrderProductionDept[]
 
   @@map("orders")
+}
+
+// ─── Цехи производства ────────────────────────────────────────────────────────
+
+model OrderProductionDept {
+  id        String         @id @default(cuid())
+  orderId   String
+  dept      ProductionDept
+  inWorkAt  DateTime?
+  doneAt    DateTime?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([orderId, dept])
+  @@map("order_production_depts")
 }
 
 // ─── Позиции заказа (спецификация) ───────────────────────────────────────────
