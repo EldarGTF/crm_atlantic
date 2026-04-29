@@ -132,6 +132,7 @@ model Measurement {
   leadId      String
   measurerId  String
   scheduledAt DateTime
+  inWorkAt    DateTime?
   doneAt      DateTime?
   address     String
   notes       String?

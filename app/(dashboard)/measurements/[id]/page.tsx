@@ -8,6 +8,7 @@ import { ChevronLeft, Calendar, MapPin, User, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { MarkDoneButton } from "@/components/measurements/mark-done-button";
+import { TakeInWorkButton } from "@/components/measurements/take-in-work-button";
 import { getSession } from "@/lib/session";
 
 type Props = { params: Promise<{ id: string }> };
@@ -84,8 +85,22 @@ export default async function MeasurementPage({ params }: Props) {
         </div>
 
         {!m.doneAt && (
-          <div className="pt-2 border-t">
-            <MarkDoneButton measurementId={id} leadId={m.leadId} role={role} />
+          <div className="pt-2 border-t space-y-2">
+            {m.inWorkAt ? (
+              <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                <span className="font-medium">В работе</span>
+                <span className="text-amber-500">·</span>
+                <span className="text-amber-600">{m.measurer.name}</span>
+                <span className="text-amber-400 text-xs ml-auto">
+                  {format(new Date(m.inWorkAt), "d MMM, HH:mm", { locale: ru })}
+                </span>
+              </div>
+            ) : (
+              <TakeInWorkButton measurementId={id} role={role} />
+            )}
+            {m.inWorkAt && (
+              <MarkDoneButton measurementId={id} leadId={m.leadId} role={role} />
+            )}
           </div>
         )}
         {m.doneAt && (

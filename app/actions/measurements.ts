@@ -51,6 +51,15 @@ export async function createMeasurement(_state: unknown, formData: FormData) {
   redirect(`/measurements/${measurement.id}`);
 }
 
+export async function takeMeasurementInWork(id: string) {
+  await prisma.measurement.update({
+    where: { id },
+    data: { inWorkAt: new Date() },
+  });
+  revalidatePath(`/measurements/${id}`);
+  revalidatePath("/measurements");
+}
+
 export async function markMeasurementDone(id: string, leadId: string) {
   await prisma.measurement.update({
     where: { id },
