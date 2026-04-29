@@ -43,12 +43,12 @@ export default async function OrderPage({ params }: Props) {
 
   const workOrderFiles = order.files.filter((f) =>
     myWorkOrderType
-      ? f.type === myWorkOrderType
-      : ["WORK_ORDER_GLASS", "WORK_ORDER_PVC", "WORK_ORDER_ALUMINUM"].includes(f.type)
+      ? (f.type as string) === myWorkOrderType
+      : ["WORK_ORDER_GLASS", "WORK_ORDER_PVC", "WORK_ORDER_ALUMINUM"].includes(f.type as string)
   );
-  const materialsFiles = order.files.filter((f) => f.type === "MATERIALS_LIST");
+  const materialsFiles = order.files.filter((f) => (f.type as string) === "MATERIALS_LIST");
   const generalFiles = order.files.filter(
-    (f) => !["WORK_ORDER_GLASS", "WORK_ORDER_PVC", "WORK_ORDER_ALUMINUM", "MATERIALS_LIST"].includes(f.type)
+    (f) => !["WORK_ORDER_GLASS", "WORK_ORDER_PVC", "WORK_ORDER_ALUMINUM", "MATERIALS_LIST"].includes(f.type as string)
   );
 
   const paid = order.payments.reduce((s, p) => s + Number(p.amount), 0);

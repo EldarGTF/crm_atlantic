@@ -2,7 +2,9 @@
 import { getOrders } from "@/app/actions/orders";
 import { format, isPast, isToday } from "date-fns";
 import { ru } from "date-fns/locale";
-import { Phone, Calendar, AlertCircle, FileCheck, Package } from "lucide-react";
+import { Phone, Calendar, AlertCircle, FileCheck, Package, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { getSession } from "@/lib/session";
 
 // Этапы пайплайна заказа по порядку
 const STAGES = [
@@ -25,55 +27,99 @@ const PAYMENT_CONFIG = {
   PAID:     { label: "Оплачен",     cls: "bg-emerald-50 text-emerald-600 border-emerald-200" },
 } as const;
 
-type Props = { searchParams: Promise<{ filter?: string }> };
+type Props = { searchParams: Promise<{ filter?: string; q?: string; payment?: string }> };
 
 export default async function OrdersPage({ searchParams }: Props) {
-  const { filter } = await searchParams;
+  const { filter, q, payment } = await searchParams;
+  const [session] = await Promise.all([getSession()]);
+  const role = session?.role ?? "MANAGER";
+  const canExport = role === "ADMIN" || role === "MANAGER" || role === "ECONOMIST";
+
   const archived = filter === "archive";
-  const orders = await getOrders(archived);
+  const orders = await getOrders(archived, q, payment);
 
   const active  = orders.filter((o) => !o.act && !o.archived);
   const signed  = orders.filter((o) => !!o.act && !o.archived);
   const list    = filter === "signed" ? signed : filter === "archive" ? orders : active;
 
-  const filters = [
+  const tabFilters = [
     { label: "В работе",     value: undefined,  count: active.length },
     { label: "Акт подписан", value: "signed",   count: signed.length },
     { label: "Архив",        value: "archive",  count: null },
   ];
 
+  const paymentFilters = [
+    { label: "Все",         value: undefined },
+    { label: "Не оплачен",  value: "UNPAID" },
+    { label: "Предоплата",  value: "PREPAID" },
+    { label: "Оплачен",     value: "PAID" },
+  ];
+
   return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-[1.375rem] font-bold tracking-tight text-slate-900">Заказы</h1>
           <p className="text-sm text-slate-500 mt-0.5">Все сделки с созданным заказом</p>
         </div>
+        {canExport && (
+          <a
+            href={`/api/export/orders?${new URLSearchParams({ ...(q ? { q } : {}), ...(payment ? { payment } : {}), ...(filter === "archive" ? { archived: "1" } : {}) }).toString()}`}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium border bg-white text-slate-600 border-slate-200 hover:bg-slate-50 transition-colors"
+          >
+            ↓ Excel
+          </a>
+        )}
       </div>
 
-      {/* Фильтры */}
-      <div className="flex gap-2">
-        {filters.map(({ label, value, count }) => {
-          const active = filter === value || (!filter && !value);
-          return (
-            <Link
-              key={label}
-              href={value ? `/orders?filter=${value}` : "/orders"}
-              className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors border ${
-                active
-                  ? "bg-blue-600 text-white border-blue-600"
-                  : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-              }`}
-            >
-              {label}
-              {count !== null && (
-                <span className={`ml-1.5 text-xs font-semibold ${active ? "opacity-75" : "text-slate-400"}`}>
-                  {count}
-                </span>
-              )}
-            </Link>
-          );
-        })}
+      {/* Поиск */}
+      <form className="relative max-w-sm">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <Input
+          name="q"
+          placeholder="Поиск по клиенту, телефону..."
+          defaultValue={q}
+          className="pl-9"
+        />
+        {filter && <input type="hidden" name="filter" value={filter} />}
+        {payment && <input type="hidden" name="payment" value={payment} />}
+      </form>
+
+      {/* Табы + фильтр оплаты */}
+      <div className="flex flex-col gap-2">
+        <div className="flex gap-2 flex-wrap">
+          {tabFilters.map(({ label, value, count }) => {
+            const isActive = filter === value || (!filter && !value);
+            const href = value
+              ? `/orders?filter=${value}${q ? `&q=${q}` : ""}${payment ? `&payment=${payment}` : ""}`
+              : `/orders${q ? `?q=${q}` : ""}${payment ? `${q ? "&" : "?"}payment=${payment}` : ""}`;
+            return (
+              <Link key={label} href={href}
+                className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors border ${isActive ? "bg-blue-600 text-white border-blue-600" : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"}`}
+              >
+                {label}
+                {count !== null && <span className={`ml-1.5 text-xs font-semibold ${isActive ? "opacity-75" : "text-slate-400"}`}>{count}</span>}
+              </Link>
+            );
+          })}
+        </div>
+        {!archived && (
+          <div className="flex gap-1.5 flex-wrap">
+            {paymentFilters.map(({ label, value }) => {
+              const isActive = payment === value || (!payment && !value);
+              const href = value
+                ? `/orders?${filter ? `filter=${filter}&` : ""}payment=${value}${q ? `&q=${q}` : ""}`
+                : `/orders${filter ? `?filter=${filter}` : ""}${q ? `${filter ? "&" : "?"}q=${q}` : ""}`;
+              return (
+                <Link key={label} href={href}
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors border ${isActive ? "bg-slate-800 text-white border-slate-800" : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"}`}
+                >
+                  {label}
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {list.length === 0 ? (

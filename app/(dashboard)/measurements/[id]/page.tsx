@@ -9,6 +9,7 @@ import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { MarkDoneButton } from "@/components/measurements/mark-done-button";
 import { TakeInWorkButton } from "@/components/measurements/take-in-work-button";
+import { RescheduleMeasurementButton } from "@/components/measurements/reschedule-button";
 import { getSession } from "@/lib/session";
 
 type Props = { params: Promise<{ id: string }> };
@@ -101,6 +102,12 @@ export default async function MeasurementPage({ params }: Props) {
             {m.inWorkAt && (
               <MarkDoneButton measurementId={id} leadId={m.leadId} role={role} />
             )}
+            <RescheduleMeasurementButton
+              measurementId={id}
+              currentDate={new Date(m.scheduledAt).toISOString()}
+              currentAddress={m.address}
+              role={role}
+            />
           </div>
         )}
         {m.doneAt && (

@@ -93,6 +93,14 @@ export async function scheduleInstallation(_state: unknown, formData: FormData) 
   redirect("/installation");
 }
 
+export async function rescheduleInstallation(id: string, scheduledAt: string) {
+  await prisma.installation.update({
+    where: { id },
+    data: { scheduledAt: new Date(scheduledAt) },
+  });
+  revalidatePath("/installation");
+}
+
 export async function takeInstallationInWork(installationId: string) {
   await prisma.installation.update({
     where: { id: installationId },

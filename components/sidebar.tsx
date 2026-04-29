@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Users, FileText, Ruler, Package,
-  Wrench, Archive, CheckSquare, HardHat, UserCog, LogOut, Menu, X,
+  Wrench, Archive, CheckSquare, HardHat, UserCog, LogOut, Menu, X, BarChart3,
 } from "lucide-react";
 import { useState } from "react";
 import { logout } from "@/app/actions/auth";
@@ -18,6 +18,7 @@ const navGroups = [
     label: "Продажи",
     items: [
       { href: "/dashboard",    label: "Дашборд",     icon: LayoutDashboard, roles: ["ADMIN", "MANAGER", "ECONOMIST"] },
+      { href: "/analytics",    label: "Аналитика",   icon: BarChart3,       roles: ["ADMIN", "MANAGER", "ECONOMIST"] },
       { href: "/leads",        label: "Заявки",       icon: FileText,        roles: ["ADMIN", "MANAGER", "ECONOMIST"] },
       { href: "/clients",      label: "Клиенты",      icon: Users,           roles: ["ADMIN", "MANAGER", "ECONOMIST"] },
     ],

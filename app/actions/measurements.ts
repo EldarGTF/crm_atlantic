@@ -84,6 +84,15 @@ export async function markMeasurementDone(id: string, leadId: string) {
   revalidatePath(`/leads/${leadId}`);
 }
 
+export async function rescheduleMeasurement(id: string, scheduledAt: string, address?: string) {
+  await prisma.measurement.update({
+    where: { id },
+    data: { scheduledAt: new Date(scheduledAt), ...(address ? { address } : {}) },
+  });
+  revalidatePath(`/measurements/${id}`);
+  revalidatePath("/measurements");
+}
+
 export async function addMeasurementFile(
   measurementId: string,
   file: { name: string; url: string; size: number }

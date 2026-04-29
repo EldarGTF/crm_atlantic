@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { markInstallationDone, takeInstallationInWork } from "@/app/actions/installation";
+import { RescheduleInstallationButton } from "@/components/installation/reschedule-installation-button";
 import { Calendar, MapPin, User, CheckCircle, ChevronRight, PlayCircle } from "lucide-react";
 import { format, isPast, isToday } from "date-fns";
 import { ru } from "date-fns/locale";
@@ -107,20 +108,25 @@ export function InstallationCard({ installation: inst, role }: Props) {
         </div>
       )}
 
-      {!inst.doneAt && canAct && (
+      {!inst.doneAt && (
         <div className="flex gap-2 flex-wrap">
-          {!inst.inWorkAt && (
+          {canAct && !inst.inWorkAt && (
             <Button size="sm" variant="outline" onClick={handleTakeInWork} disabled={isPending}>
               <PlayCircle className="h-3.5 w-3.5 mr-1" />
               {isPending ? "..." : "Взять в работу"}
             </Button>
           )}
-          {inst.inWorkAt && (
+          {canAct && inst.inWorkAt && (
             <Button size="sm" onClick={handleDone} disabled={isPending}>
               <CheckCircle className="h-3.5 w-3.5 mr-1" />
               {isPending ? "..." : "Отметить выполненным"}
             </Button>
           )}
+          <RescheduleInstallationButton
+            installationId={inst.id}
+            currentDate={new Date(inst.scheduledAt).toISOString()}
+            role={role}
+          />
         </div>
       )}
     </div>

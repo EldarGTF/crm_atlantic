@@ -219,9 +219,22 @@ export async function sendToProduction(
   revalidatePath("/production");
 }
 
-export async function getOrders(archived = false) {
+export async function getOrders(
+  archived = false,
+  q?: string,
+  paymentStatus?: string
+) {
   const orders = await prisma.order.findMany({
-    where: { archived },
+    where: {
+      archived,
+      ...(paymentStatus ? { paymentStatus: paymentStatus as "UNPAID" | "PREPAID" | "PAID" } : {}),
+      ...(q ? {
+        OR: [
+          { lead: { client: { name: { contains: q, mode: "insensitive" } } } },
+          { lead: { client: { phone: { contains: q } } } },
+        ],
+      } : {}),
+    },
     include: {
       lead: { include: { client: { select: { name: true, phone: true } } } },
       act: { select: { signedAt: true } },
