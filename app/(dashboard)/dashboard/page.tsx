@@ -112,7 +112,7 @@ export default async function DashboardPage() {
               const pct = Math.round((count / maxPipeline) * 100);
               return (
                 <Link key={key} href={`/leads?status=${key}`} className="flex items-center gap-3 group hover:opacity-80 transition-opacity">
-                  <span className="text-xs text-slate-500 w-32 shrink-0 truncate">{LEAD_STATUS_LABELS[key]}</span>
+                  <span className="text-xs text-slate-500 w-24 sm:w-32 shrink-0 truncate">{LEAD_STATUS_LABELS[key]}</span>
                   <div className="flex-1 bg-slate-100 rounded-full h-2">
                     <div className="h-2 rounded-full bg-blue-500 transition-all" style={{ width: `${pct}%` }} />
                   </div>

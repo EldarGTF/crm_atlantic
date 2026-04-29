@@ -142,32 +142,54 @@ export default async function OrdersPage({ searchParams }: Props) {
 
                 {/* Прогресс-бар этапов */}
                 {!archived && (
-                  <div className="flex items-center gap-0">
-                    {STAGES.map((stage, i) => {
-                      const done    = i < stageIdx;
-                      const current = i === stageIdx;
-                      const isLast  = i === STAGES.length - 1;
-                      return (
-                        <div key={stage.key} className="flex items-center flex-1 min-w-0">
-                          <div className="flex flex-col items-center flex-1 min-w-0">
-                            <div className={`w-full h-1.5 rounded-full transition-colors ${
-                              done    ? "bg-blue-500" :
-                              current ? "bg-blue-300" :
-                                        "bg-slate-100"
-                            }`} />
-                            <span className={`text-[9px] mt-1 font-medium truncate w-full text-center leading-tight ${
-                              current ? "text-blue-600" :
-                              done    ? "text-slate-400" :
-                                        "text-slate-300"
-                            }`}>
-                              {stage.label}
-                            </span>
+                  <>
+                    {/* Mobile: current stage badge + mini bar */}
+                    <div className="sm:hidden mt-2 space-y-1.5">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs text-slate-500">Этап {stageIdx + 1}/{STAGES.length}:</span>
+                        <span className="text-xs font-semibold text-blue-600">{STAGES[stageIdx]?.label}</span>
+                      </div>
+                      <div className="flex gap-0.5">
+                        {STAGES.map((stage, i) => (
+                          <div
+                            key={stage.key}
+                            className={`h-1 flex-1 rounded-full transition-colors ${
+                              i < stageIdx ? "bg-blue-500" :
+                              i === stageIdx ? "bg-blue-300" :
+                              "bg-slate-100"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    {/* Desktop: full bar with labels */}
+                    <div className="hidden sm:flex items-center gap-0">
+                      {STAGES.map((stage, i) => {
+                        const done    = i < stageIdx;
+                        const current = i === stageIdx;
+                        const isLast  = i === STAGES.length - 1;
+                        return (
+                          <div key={stage.key} className="flex items-center flex-1 min-w-0">
+                            <div className="flex flex-col items-center flex-1 min-w-0">
+                              <div className={`w-full h-1.5 rounded-full transition-colors ${
+                                done    ? "bg-blue-500" :
+                                current ? "bg-blue-300" :
+                                          "bg-slate-100"
+                              }`} />
+                              <span className={`text-[9px] mt-1 font-medium truncate w-full text-center leading-tight ${
+                                current ? "text-blue-600" :
+                                done    ? "text-slate-400" :
+                                          "text-slate-300"
+                              }`}>
+                                {stage.label}
+                              </span>
+                            </div>
+                            {!isLast && <div className="w-0.5 h-1.5 bg-transparent shrink-0" />}
                           </div>
-                          {!isLast && <div className="w-0.5 h-1.5 bg-transparent shrink-0" />}
-                        </div>
-                      );
-                    })}
-                  </div>
+                        );
+                      })}
+                    </div>
+                  </>
                 )}
               </Link>
             );

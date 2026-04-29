@@ -157,7 +157,7 @@ export function Sidebar({ role }: { role: string }) {
             className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 md:hidden"
             onClick={() => setMobileOpen(false)}
           />
-          <div className="fixed inset-y-0 left-0 w-[240px] bg-white border-r border-slate-200 z-50 md:hidden shadow-xl">
+          <div className="fixed inset-y-0 left-0 w-[85vw] max-w-[240px] bg-white border-r border-slate-200 z-50 md:hidden shadow-xl">
             <button
               onClick={() => setMobileOpen(false)}
               className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"

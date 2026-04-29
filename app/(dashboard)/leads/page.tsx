@@ -27,10 +27,10 @@ export default async function LeadsPage({ searchParams }: Props) {
       </div>
 
       {/* Фильтры */}
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex flex-col gap-2">
         <form className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input name="q" placeholder="Поиск..." defaultValue={q} className="pl-9 w-52" />
+          <Input name="q" placeholder="Поиск..." defaultValue={q} className="pl-9 w-full sm:w-64" />
           {status && <input type="hidden" name="status" value={status} />}
         </form>
         <div className="flex gap-1.5 flex-wrap">

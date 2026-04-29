@@ -139,14 +139,16 @@ export function OrderItemsEditor({ onChange }: Props) {
         )}
         <div className="space-y-2">
           {extras.map((extra, idx) => (
-            <div key={idx} className="flex gap-2 items-center border rounded-lg p-2 bg-gray-50">
-              <Input placeholder="Откосы, подоконник..." className="flex-1" value={extra.name}
+            <div key={idx} className="border rounded-lg p-2 bg-gray-50 space-y-2 sm:space-y-0 sm:flex sm:gap-2 sm:items-center">
+              <Input placeholder="Откосы, подоконник..." className="w-full sm:flex-1" value={extra.name}
                 onChange={(e) => updateExtra(idx, "name", e.target.value)} />
-              <Input type="number" placeholder="Цена ₽" className="w-28" value={extra.price || ""}
-                onChange={(e) => updateExtra(idx, "price", Number(e.target.value))} />
-              <button type="button" onClick={() => removeExtra(idx)} className="text-gray-300 hover:text-red-500">
-                <Trash2 className="h-4 w-4" />
-              </button>
+              <div className="flex gap-2 items-center">
+                <Input type="number" placeholder="Цена ₽" className="flex-1 sm:w-28 sm:flex-none" value={extra.price || ""}
+                  onChange={(e) => updateExtra(idx, "price", Number(e.target.value))} />
+                <button type="button" onClick={() => removeExtra(idx)} className="text-gray-300 hover:text-red-500 shrink-0">
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           ))}
         </div>

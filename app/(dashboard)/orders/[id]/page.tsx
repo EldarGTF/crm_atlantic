@@ -131,18 +131,18 @@ export default async function OrderPage({ params }: Props) {
           <div className="px-4 py-3 border-b">
             <h2 className="font-semibold text-gray-900">Оплата</h2>
           </div>
-          <div className="px-4 py-3 grid grid-cols-3 gap-3 text-center text-sm">
+          <div className="px-4 py-3 grid grid-cols-3 gap-2 text-center text-sm">
             <div>
               <div className="text-gray-500">Сумма</div>
-              <div className="font-bold text-lg">{Number(order.totalAmount).toLocaleString("ru-RU")} ₽</div>
+              <div className="font-bold text-base sm:text-lg">{Number(order.totalAmount).toLocaleString("ru-RU")} ₽</div>
             </div>
             <div>
               <div className="text-gray-500">Оплачено</div>
-              <div className="font-bold text-lg text-green-600">{paid.toLocaleString("ru-RU")} ₽</div>
+              <div className="font-bold text-base sm:text-lg text-green-600">{paid.toLocaleString("ru-RU")} ₽</div>
             </div>
             <div>
               <div className="text-gray-500">Долг</div>
-              <div className={`font-bold text-lg ${debt > 0 ? "text-red-500" : "text-gray-400"}`}>
+              <div className={`font-bold text-base sm:text-lg ${debt > 0 ? "text-red-500" : "text-gray-400"}`}>
                 {debt.toLocaleString("ru-RU")} ₽
               </div>
             </div>

@@ -95,11 +95,11 @@ export function NewOrderForm({ action, leadId }: Props) {
       </div>
 
       {/* Итоговая сумма */}
-      <div className="border-t pt-4 flex items-center justify-between">
+      <div className="border-t pt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="text-lg font-bold">
           Итого: <span className="text-blue-600">{total.toLocaleString("ru-RU")} ₽</span>
         </div>
-        <Button type="submit" disabled={isPending || items.length === 0}>
+        <Button type="submit" disabled={isPending || items.length === 0} className="w-full sm:w-auto">
           {isPending ? "Создание..." : "Создать заказ"}
         </Button>
       </div>
