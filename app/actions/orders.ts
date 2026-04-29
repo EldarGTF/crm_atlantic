@@ -122,7 +122,11 @@ export async function addPayment(orderId: string, _state: unknown, formData: For
   revalidatePath(`/orders/${orderId}`);
 }
 
-export async function signAct(orderId: string, leadId: string) {
+export async function signAct(
+  orderId: string,
+  leadId: string,
+  actFile?: { name: string; url: string; size: number } | null
+) {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
     select: { totalAmount: true, prepaidAmount: true },
@@ -133,7 +137,13 @@ export async function signAct(orderId: string, leadId: string) {
     return { warning: "Есть непогашенная задолженность" };
   }
 
-  await prisma.act.create({ data: { orderId, signedAt: new Date() } });
+  await prisma.act.create({ data: { orderId, signedAt: new Date(), fileUrl: actFile?.url ?? null } });
+
+  if (actFile) {
+    await prisma.orderFile.create({
+      data: { orderId, type: "DOCUMENT", name: actFile.name, url: actFile.url, size: actFile.size },
+    });
+  }
 
   await prisma.lead.update({
     where: { id: leadId },
@@ -161,13 +171,26 @@ export async function archiveOrder(orderId: string, leadId: string) {
   redirect("/leads");
 }
 
-export async function sendToProduction(orderId: string, leadId: string, depts: string[]) {
+type OrderFileInput = { type: string; name: string; url: string; size: number };
+
+export async function sendToProduction(
+  orderId: string,
+  leadId: string,
+  depts: string[],
+  files: OrderFileInput[] = []
+) {
   if (!depts.length) return { message: "Выберите хотя бы один цех" };
 
   await prisma.orderProductionDept.deleteMany({ where: { orderId } });
   await prisma.orderProductionDept.createMany({
     data: depts.map((dept) => ({ orderId, dept: dept as "GLASS" | "PVC" | "ALUMINUM" })),
   });
+
+  if (files.length) {
+    await prisma.orderFile.createMany({
+      data: files.map((f) => ({ orderId, type: f.type as never, name: f.name, url: f.url, size: f.size })),
+    });
+  }
 
   await prisma.lead.update({
     where: { id: leadId },

@@ -5,9 +5,12 @@ import { revalidatePath } from "next/cache";
 
 export async function addOrderFile(
   orderId: string,
+  type: string,
   file: { name: string; url: string; size: number }
 ) {
-  await prisma.orderFile.create({ data: { orderId, ...file } });
+  await prisma.orderFile.create({
+    data: { orderId, type: type as never, ...file },
+  });
   revalidatePath(`/orders/${orderId}`);
 }
 
