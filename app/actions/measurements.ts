@@ -5,6 +5,7 @@ import { getSession } from "@/lib/session";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { sendPushToUser } from "@/lib/push";
 
 const MeasurementSchema = z.object({
   leadId: z.string().min(1),
@@ -38,7 +39,6 @@ export async function createMeasurement(_state: unknown, formData: FormData) {
     },
   });
 
-  // обновляем статус заявки
   await prisma.lead.update({
     where: { id: parsed.data.leadId },
     data: {
@@ -46,6 +46,12 @@ export async function createMeasurement(_state: unknown, formData: FormData) {
       statusHistory: { create: { status: "MEASUREMENT_SCHEDULED", note: "Назначен замер" } },
     },
   });
+
+  sendPushToUser(parsed.data.measurerId, {
+    title: "Новый замер",
+    body: `Адрес: ${parsed.data.address}`,
+    url: `/measurements/${measurement.id}`,
+  }).catch(() => {});
 
   revalidatePath(`/leads/${parsed.data.leadId}`);
   redirect(`/measurements/${measurement.id}`);

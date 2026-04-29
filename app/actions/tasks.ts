@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { sendPushToUser } from "@/lib/push";
 
 export async function getTasks(filter?: "my" | "done") {
   const session = await getSession();
@@ -45,6 +46,14 @@ export async function createTask(_state: unknown, formData: FormData) {
       leadId: leadId || null,
     },
   });
+
+  if (assigneeId !== session.userId) {
+    sendPushToUser(assigneeId, {
+      title: "Новая задача",
+      body: title,
+      url: "/tasks",
+    }).catch(() => {});
+  }
 
   revalidatePath("/tasks");
   redirect("/tasks");

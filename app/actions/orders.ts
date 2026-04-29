@@ -5,6 +5,7 @@ import { getSession } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { sendPushToRole } from "@/lib/push";
 
 const OrderItemSchema = z.object({
   productType: z.string().min(1),
@@ -168,6 +169,12 @@ export async function sendToProduction(orderId: string, leadId: string) {
       statusHistory: { create: { status: "SENT_TO_PRODUCTION", note: "Заказ отправлен в производство" } },
     },
   });
+  sendPushToRole("PRODUCTION", {
+    title: "Новый заказ в производство",
+    body: "Заказ поступил в производство",
+    url: "/production",
+  }).catch(() => {});
+
   revalidatePath(`/orders/${orderId}`);
   revalidatePath(`/leads/${leadId}`);
   revalidatePath("/production");

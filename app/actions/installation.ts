@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { sendPushToUser } from "@/lib/push";
 
 export async function getInstallations() {
   const installations = await prisma.installation.findMany({
@@ -80,6 +81,12 @@ export async function scheduleInstallation(_state: unknown, formData: FormData) 
       statusHistory: { create: { status: "INSTALLATION_SCHEDULED", note: "Монтаж назначен" } },
     },
   });
+
+  sendPushToUser(installerId, {
+    title: "Новый монтаж",
+    body: `Адрес: ${address}`,
+    url: "/installation",
+  }).catch(() => {});
 
   revalidatePath("/installation");
   revalidatePath(`/orders/${orderId}`);

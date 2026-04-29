@@ -9,6 +9,7 @@ import {
 import { useState } from "react";
 import { logout } from "@/app/actions/auth";
 import { cn } from "@/lib/utils";
+import { PushSubscribeButton } from "@/components/push-subscribe-button";
 
 type Role = "ADMIN" | "MANAGER" | "MEASURER" | "INSTALLER" | "PRODUCTION";
 
@@ -108,8 +109,9 @@ function SidebarContent({ role, onLinkClick }: { role: string; onLinkClick?: () 
 
       <div className="h-px bg-slate-100 mx-3 mt-2" />
 
-      {/* Выход */}
-      <div className="px-2 py-3">
+      {/* Уведомления + Выход */}
+      <div className="px-2 py-3 space-y-1">
+        <PushSubscribeButton />
         <form action={logout}>
           <button
             type="submit"

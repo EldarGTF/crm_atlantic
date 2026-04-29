@@ -30,11 +30,12 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  leads         Lead[]
-  measurements  Measurement[]
-  tasks         Task[]         @relation("TaskAssignee")
-  tasksCreated  Task[]         @relation("TaskCreator")
-  installations Installation[]
+  leads             Lead[]
+  measurements      Measurement[]
+  tasks             Task[]             @relation("TaskAssignee")
+  tasksCreated      Task[]             @relation("TaskCreator")
+  installations     Installation[]
+  pushSubscriptions PushSubscription[]
 
   @@map("users")
 }
@@ -306,6 +307,21 @@ model Act {
   order Order @relation(fields: [orderId], references: [id])
 
   @@map("acts")
+}
+
+// ─── Push-подписки ───────────────────────────────────────────────────────────
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("push_subscriptions")
 }
 
 // ─── Задачи ───────────────────────────────────────────────────────────────────
