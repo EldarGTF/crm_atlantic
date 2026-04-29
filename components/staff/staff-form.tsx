@@ -15,7 +15,8 @@ const ROLES = [
   { value: "PRODUCTION",         label: "Мастер производства" },
   { value: "PRODUCTION_GLASS",   label: "Цех стекла" },
   { value: "PRODUCTION_PVC",     label: "Цех ПВХ" },
-  { value: "PRODUCTION_ALUMINUM","label": "Цех алюминия" },
+  { value: "PRODUCTION_ALUMINUM", label: "Цех алюминия" },
+  { value: "ECONOMIST",          label: "Экономист" },
 ];
 
 type Props = {

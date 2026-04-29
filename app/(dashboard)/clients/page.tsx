@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { LinkButton } from "@/components/ui/link-button";
 import { Plus, Search, Phone, MapPin } from "lucide-react";
+import { getSession } from "@/lib/session";
 
 const STATUS_LABELS = { REGULAR: "Обычный", RETURNING: "Постоянный", VIP: "VIP" };
 const STATUS_COLORS = {
@@ -16,15 +17,18 @@ type Props = { searchParams: Promise<{ q?: string }> };
 
 export default async function ClientsPage({ searchParams }: Props) {
   const { q } = await searchParams;
-  const clients = await getClients(q);
+  const [clients, session] = await Promise.all([getClients(q), getSession()]);
+  const canEdit = session?.role !== "ECONOMIST";
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-gray-900">Клиенты</h1>
-        <LinkButton href="/clients/new">
-          <Plus className="h-4 w-4 mr-1" /> Новый клиент
-        </LinkButton>
+        {canEdit && (
+          <LinkButton href="/clients/new">
+            <Plus className="h-4 w-4 mr-1" /> Новый клиент
+          </LinkButton>
+        )}
       </div>
 
       <form className="relative max-w-sm">

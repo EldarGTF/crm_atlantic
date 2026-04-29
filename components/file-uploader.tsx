@@ -11,7 +11,7 @@ type UploadedFile = { id: string; name: string; url: string; size: number };
 type Props = {
   folder: string;
   existingFiles?: UploadedFile[];
-  onUpload: (file: { name: string; url: string; size: number }) => Promise<void>;
+  onUpload?: (file: { name: string; url: string; size: number }) => Promise<void>;
   onDelete?: (fileId: string) => Promise<void>;
 };
 
@@ -32,7 +32,7 @@ export function FileUploader({ folder, existingFiles = [], onUpload, onDelete }:
   const [files, setFiles] = useState<UploadedFile[]>(existingFiles);
 
   async function handleFiles(selected: FileList | null) {
-    if (!selected || selected.length === 0) return;
+    if (!selected || selected.length === 0 || !onUpload) return;
     setUploading(true);
 
     for (const file of Array.from(selected)) {
@@ -63,44 +63,46 @@ export function FileUploader({ folder, existingFiles = [], onUpload, onDelete }:
 
   return (
     <div className="space-y-3">
-      {/* Кнопки загрузки */}
-      <div className="flex gap-2 flex-wrap">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => inputRef.current?.click()}
-          disabled={uploading}
-        >
-          {uploading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Upload className="h-4 w-4 mr-1" />}
-          Загрузить файл
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => cameraRef.current?.click()}
-          disabled={uploading}
-        >
-          <Camera className="h-4 w-4 mr-1" /> Камера
-        </Button>
-        <input
-          ref={inputRef}
-          type="file"
-          multiple
-          accept="image/*,.pdf"
-          className="hidden"
-          onChange={(e) => handleFiles(e.target.files)}
-        />
-        <input
-          ref={cameraRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          className="hidden"
-          onChange={(e) => handleFiles(e.target.files)}
-        />
-      </div>
+      {/* Кнопки загрузки — только если разрешено */}
+      {onUpload && (
+        <div className="flex gap-2 flex-wrap">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => inputRef.current?.click()}
+            disabled={uploading}
+          >
+            {uploading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Upload className="h-4 w-4 mr-1" />}
+            Загрузить файл
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => cameraRef.current?.click()}
+            disabled={uploading}
+          >
+            <Camera className="h-4 w-4 mr-1" /> Камера
+          </Button>
+          <input
+            ref={inputRef}
+            type="file"
+            multiple
+            accept="image/*,.pdf"
+            className="hidden"
+            onChange={(e) => handleFiles(e.target.files)}
+          />
+          <input
+            ref={cameraRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={(e) => handleFiles(e.target.files)}
+          />
+        </div>
+      )}
 
       {/* Список файлов */}
       {files.length > 0 && (

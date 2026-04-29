@@ -5,15 +5,15 @@ const PUBLIC_ROUTES = ["/login"];
 
 const ROUTE_ROLES: Record<string, string[]> = {
   "/staff":        ["ADMIN"],
-  "/leads":        ["ADMIN", "MANAGER"],
-  "/clients":      ["ADMIN", "MANAGER"],
-  "/orders":       ["ADMIN", "MANAGER", "PRODUCTION", "PRODUCTION_GLASS", "PRODUCTION_PVC", "PRODUCTION_ALUMINUM"],
-  "/production":   ["ADMIN", "MANAGER", "PRODUCTION", "PRODUCTION_GLASS", "PRODUCTION_PVC", "PRODUCTION_ALUMINUM"],
-  "/archive":      ["ADMIN", "MANAGER"],
-  "/measurements": ["ADMIN", "MANAGER", "MEASURER"],
-  "/installation": ["ADMIN", "MANAGER", "INSTALLER"],
-  "/tasks":        ["ADMIN", "MANAGER", "MEASURER", "INSTALLER", "PRODUCTION", "PRODUCTION_GLASS", "PRODUCTION_PVC", "PRODUCTION_ALUMINUM"],
-  "/dashboard":    ["ADMIN", "MANAGER"],
+  "/leads":        ["ADMIN", "MANAGER", "ECONOMIST"],
+  "/clients":      ["ADMIN", "MANAGER", "ECONOMIST"],
+  "/orders":       ["ADMIN", "MANAGER", "ECONOMIST", "PRODUCTION", "PRODUCTION_GLASS", "PRODUCTION_PVC", "PRODUCTION_ALUMINUM"],
+  "/production":   ["ADMIN", "MANAGER", "ECONOMIST", "PRODUCTION", "PRODUCTION_GLASS", "PRODUCTION_PVC", "PRODUCTION_ALUMINUM"],
+  "/archive":      ["ADMIN", "MANAGER", "ECONOMIST"],
+  "/measurements": ["ADMIN", "MANAGER", "ECONOMIST", "MEASURER"],
+  "/installation": ["ADMIN", "MANAGER", "ECONOMIST", "INSTALLER"],
+  "/tasks":        ["ADMIN", "MANAGER", "ECONOMIST", "MEASURER", "INSTALLER", "PRODUCTION", "PRODUCTION_GLASS", "PRODUCTION_PVC", "PRODUCTION_ALUMINUM"],
+  "/dashboard":    ["ADMIN", "MANAGER", "ECONOMIST"],
 };
 
 const HOME_BY_ROLE: Record<string, string> = {
@@ -25,6 +25,7 @@ const HOME_BY_ROLE: Record<string, string> = {
   PRODUCTION_GLASS:    "/production",
   PRODUCTION_PVC:      "/production",
   PRODUCTION_ALUMINUM: "/production",
+  ECONOMIST:           "/dashboard",
 };
 
 export async function proxy(request: NextRequest) {

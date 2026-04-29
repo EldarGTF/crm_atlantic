@@ -3,6 +3,7 @@ import { TaskCard } from "@/components/tasks/task-card";
 import { LinkButton } from "@/components/ui/link-button";
 import { Plus, CheckSquare } from "lucide-react";
 import Link from "next/link";
+import { getSession } from "@/lib/session";
 
 type Props = { searchParams: Promise<{ filter?: string }> };
 
@@ -10,7 +11,8 @@ export default async function TasksPage({ searchParams }: Props) {
   const { filter } = await searchParams;
 
   const filterArg = filter === "my" ? "my" : filter === "done" ? "done" : undefined;
-  const tasks = await getTasks(filterArg);
+  const [tasks, session] = await Promise.all([getTasks(filterArg), getSession()]);
+  const canEdit = session?.role !== "ECONOMIST";
 
   const overdueTasks = tasks.filter((t) => {
     if (!t.dueAt || t.status === "DONE") return false;
@@ -22,9 +24,11 @@ export default async function TasksPage({ searchParams }: Props) {
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-gray-900">Задачи</h1>
-        <LinkButton href="/tasks/new">
-          <Plus className="h-4 w-4 mr-1" /> Новая задача
-        </LinkButton>
+        {canEdit && (
+          <LinkButton href="/tasks/new">
+            <Plus className="h-4 w-4 mr-1" /> Новая задача
+          </LinkButton>
+        )}
       </div>
 
       {overdueTasks.length > 0 && (

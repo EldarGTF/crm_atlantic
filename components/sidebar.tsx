@@ -11,31 +11,31 @@ import { logout } from "@/app/actions/auth";
 import { cn } from "@/lib/utils";
 import { PushSubscribeButton } from "@/components/push-subscribe-button";
 
-type Role = "ADMIN" | "MANAGER" | "MEASURER" | "INSTALLER" | "PRODUCTION" | "PRODUCTION_GLASS" | "PRODUCTION_PVC" | "PRODUCTION_ALUMINUM";
+type Role = "ADMIN" | "MANAGER" | "MEASURER" | "INSTALLER" | "PRODUCTION" | "PRODUCTION_GLASS" | "PRODUCTION_PVC" | "PRODUCTION_ALUMINUM" | "ECONOMIST";
 
 const navGroups = [
   {
     label: "Продажи",
     items: [
-      { href: "/dashboard",    label: "Дашборд",     icon: LayoutDashboard, roles: ["ADMIN", "MANAGER"] },
-      { href: "/leads",        label: "Заявки",       icon: FileText,        roles: ["ADMIN", "MANAGER"] },
-      { href: "/clients",      label: "Клиенты",      icon: Users,           roles: ["ADMIN", "MANAGER"] },
+      { href: "/dashboard",    label: "Дашборд",     icon: LayoutDashboard, roles: ["ADMIN", "MANAGER", "ECONOMIST"] },
+      { href: "/leads",        label: "Заявки",       icon: FileText,        roles: ["ADMIN", "MANAGER", "ECONOMIST"] },
+      { href: "/clients",      label: "Клиенты",      icon: Users,           roles: ["ADMIN", "MANAGER", "ECONOMIST"] },
     ],
   },
   {
     label: "Выполнение",
     items: [
-      { href: "/measurements", label: "Замеры",       icon: Ruler,           roles: ["ADMIN", "MANAGER", "MEASURER"] },
-      { href: "/orders",       label: "Заказы",       icon: Package,         roles: ["ADMIN", "MANAGER"] },
-      { href: "/production",   label: "Производство", icon: Wrench,          roles: ["ADMIN", "MANAGER", "PRODUCTION", "PRODUCTION_GLASS", "PRODUCTION_PVC", "PRODUCTION_ALUMINUM"] },
-      { href: "/installation", label: "Монтаж",       icon: HardHat,         roles: ["ADMIN", "MANAGER", "INSTALLER"] },
+      { href: "/measurements", label: "Замеры",       icon: Ruler,           roles: ["ADMIN", "MANAGER", "ECONOMIST", "MEASURER"] },
+      { href: "/orders",       label: "Заказы",       icon: Package,         roles: ["ADMIN", "MANAGER", "ECONOMIST"] },
+      { href: "/production",   label: "Производство", icon: Wrench,          roles: ["ADMIN", "MANAGER", "ECONOMIST", "PRODUCTION", "PRODUCTION_GLASS", "PRODUCTION_PVC", "PRODUCTION_ALUMINUM"] },
+      { href: "/installation", label: "Монтаж",       icon: HardHat,         roles: ["ADMIN", "MANAGER", "ECONOMIST", "INSTALLER"] },
     ],
   },
   {
     label: "Управление",
     items: [
-      { href: "/tasks",        label: "Задачи",       icon: CheckSquare,     roles: ["ADMIN", "MANAGER", "MEASURER", "INSTALLER", "PRODUCTION", "PRODUCTION_GLASS", "PRODUCTION_PVC", "PRODUCTION_ALUMINUM"] },
-      { href: "/archive",      label: "Архив",        icon: Archive,         roles: ["ADMIN", "MANAGER"] },
+      { href: "/tasks",        label: "Задачи",       icon: CheckSquare,     roles: ["ADMIN", "MANAGER", "ECONOMIST", "MEASURER", "INSTALLER", "PRODUCTION", "PRODUCTION_GLASS", "PRODUCTION_PVC", "PRODUCTION_ALUMINUM"] },
+      { href: "/archive",      label: "Архив",        icon: Archive,         roles: ["ADMIN", "MANAGER", "ECONOMIST"] },
       { href: "/staff",        label: "Сотрудники",   icon: UserCog,         roles: ["ADMIN"] },
     ],
   },

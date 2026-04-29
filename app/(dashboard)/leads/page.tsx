@@ -7,12 +7,14 @@ import { Plus, Search, Phone } from "lucide-react";
 import { LEAD_STATUS_LABELS, LEAD_SOURCE_LABELS, LEAD_STATUSES } from "@/lib/lead-constants";
 import { formatDistanceToNow } from "date-fns";
 import { ru } from "date-fns/locale";
+import { getSession } from "@/lib/session";
 
 type Props = { searchParams: Promise<{ q?: string; status?: string }> };
 
 export default async function LeadsPage({ searchParams }: Props) {
   const { q, status } = await searchParams;
-  const leads = await getLeads(q, status);
+  const [leads, session] = await Promise.all([getLeads(q, status), getSession()]);
+  const canEdit = session?.role !== "ECONOMIST";
 
   return (
     <div className="space-y-4">
@@ -21,9 +23,11 @@ export default async function LeadsPage({ searchParams }: Props) {
           <h1 className="text-[1.375rem] font-bold tracking-tight text-slate-900">Заявки</h1>
           <p className="text-sm text-slate-500 mt-0.5">Новые сделки до создания заказа</p>
         </div>
-        <LinkButton href="/leads/new">
-          <Plus className="h-4 w-4 mr-1" /> Новая заявка
-        </LinkButton>
+        {canEdit && (
+          <LinkButton href="/leads/new">
+            <Plus className="h-4 w-4 mr-1" /> Новая заявка
+          </LinkButton>
+        )}
       </div>
 
       {/* Фильтры */}

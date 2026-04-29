@@ -26,8 +26,30 @@ export default async function OrderPage({ params }: Props) {
   if (!order) notFound();
 
   const session = await getSession();
+  const role = session?.role ?? "MANAGER";
   const PRODUCTION_ROLES = new Set(["PRODUCTION", "PRODUCTION_GLASS", "PRODUCTION_PVC", "PRODUCTION_ALUMINUM"]);
-  const isProduction = PRODUCTION_ROLES.has(session?.role ?? "");
+  const isProduction = PRODUCTION_ROLES.has(role);
+  const isEconomist = role === "ECONOMIST";
+  const canEdit = !isEconomist;
+
+  // Файлы нарядов: каждый цех видит только свой наряд
+  const WORK_ORDER_TYPES: Record<string, string> = {
+    PRODUCTION_GLASS:    "WORK_ORDER_GLASS",
+    PRODUCTION_PVC:      "WORK_ORDER_PVC",
+    PRODUCTION_ALUMINUM: "WORK_ORDER_ALUMINUM",
+  };
+  const myWorkOrderType = WORK_ORDER_TYPES[role];
+  const canSeeMaterials = !isProduction; // ADMIN, MANAGER, ECONOMIST видят перечень материалов
+
+  const workOrderFiles = order.files.filter((f) =>
+    myWorkOrderType
+      ? f.type === myWorkOrderType
+      : ["WORK_ORDER_GLASS", "WORK_ORDER_PVC", "WORK_ORDER_ALUMINUM"].includes(f.type)
+  );
+  const materialsFiles = order.files.filter((f) => f.type === "MATERIALS_LIST");
+  const generalFiles = order.files.filter(
+    (f) => !["WORK_ORDER_GLASS", "WORK_ORDER_PVC", "WORK_ORDER_ALUMINUM", "MATERIALS_LIST"].includes(f.type)
+  );
 
   const paid = order.payments.reduce((s, p) => s + Number(p.amount), 0);
   const debt = Number(order.totalAmount) - paid;
@@ -166,7 +188,7 @@ export default async function OrderPage({ params }: Props) {
             </div>
           )}
 
-          {!order.act && (
+          {!order.act && canEdit && (
             <div className="border-t p-4">
               <PaymentForm action={addPaymentAction} />
             </div>
@@ -175,7 +197,7 @@ export default async function OrderPage({ params }: Props) {
       )}
 
       {/* Производство */}
-      {!isProduction && !order.act && (
+      {!isProduction && !isEconomist && !order.act && (
         <div className="bg-white rounded-lg border p-4 space-y-3">
           <h2 className="font-semibold text-gray-900">Производство</h2>
           {order.productionDeadline && (
@@ -243,20 +265,16 @@ export default async function OrderPage({ params }: Props) {
       )}
 
       {/* Наряды в цех */}
-      {(() => {
-        const workOrders = order.files.filter((f) =>
-          ["WORK_ORDER_GLASS", "WORK_ORDER_PVC", "WORK_ORDER_ALUMINUM"].includes(f.type)
-        );
+      {workOrderFiles.length > 0 && (() => {
         const WORK_ORDER_LABELS: Record<string, string> = {
           WORK_ORDER_GLASS:    "Наряд — Стекло",
           WORK_ORDER_PVC:      "Наряд — ПВХ",
           WORK_ORDER_ALUMINUM: "Наряд — Алюминий",
         };
-        if (workOrders.length === 0) return null;
         return (
           <div className="bg-white rounded-lg border p-4 space-y-3">
             <h2 className="font-semibold text-gray-900">Наряды в цех</h2>
-            {workOrders.map((f) => (
+            {workOrderFiles.map((f) => (
               <div key={f.id} className="flex items-center gap-2 text-sm">
                 <span className="text-gray-500 w-36 shrink-0">{WORK_ORDER_LABELS[f.type] ?? f.type}</span>
                 <a href={f.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate">
@@ -268,37 +286,31 @@ export default async function OrderPage({ params }: Props) {
         );
       })()}
 
-      {/* Перечень материалов */}
-      {(() => {
-        const mats = order.files.filter((f) => f.type === "MATERIALS_LIST");
-        if (mats.length === 0) return null;
-        return (
-          <div className="bg-white rounded-lg border p-4 space-y-2">
-            <h2 className="font-semibold text-gray-900">Перечень материалов</h2>
-            {mats.map((f) => (
-              <a key={f.id} href={f.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-600 hover:underline">
-                {f.name}
-              </a>
-            ))}
-          </div>
-        );
-      })()}
+      {/* Перечень материалов — только для ADMIN, MANAGER, ECONOMIST */}
+      {canSeeMaterials && materialsFiles.length > 0 && (
+        <div className="bg-white rounded-lg border p-4 space-y-2">
+          <h2 className="font-semibold text-gray-900">Перечень материалов</h2>
+          {materialsFiles.map((f) => (
+            <a key={f.id} href={f.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-600 hover:underline">
+              {f.name}
+            </a>
+          ))}
+        </div>
+      )}
 
       {/* Прочие документы */}
       <div className="bg-white rounded-lg border p-4 space-y-3">
         <h2 className="font-semibold text-gray-900">Документы и файлы</h2>
         <FileUploader
           folder={`orders/${id}`}
-          existingFiles={order.files.filter((f) =>
-            !["WORK_ORDER_GLASS", "WORK_ORDER_PVC", "WORK_ORDER_ALUMINUM", "MATERIALS_LIST"].includes(f.type)
-          )}
-          onUpload={addFile}
-          onDelete={async (fileId) => { "use server"; await deleteOrderFile(fileId, id); }}
+          existingFiles={generalFiles}
+          onUpload={canEdit ? addFile : undefined}
+          onDelete={canEdit ? async (fileId) => { "use server"; await deleteOrderFile(fileId, id); } : undefined}
         />
       </div>
 
       {/* Действия */}
-      {!isProduction && (
+      {!isProduction && canEdit && (
         <OrderActions
           orderId={id}
           leadId={order.leadId}

@@ -18,6 +18,7 @@ enum Role {
   PRODUCTION_GLASS
   PRODUCTION_PVC
   PRODUCTION_ALUMINUM
+  ECONOMIST
 }
 
 enum ProductionDept {

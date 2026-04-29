@@ -9,13 +9,15 @@ import { ChevronLeft, Phone, MapPin, Plus, Calendar, Clock, CheckSquare, AlertCi
 import { LEAD_STATUS_LABELS, LEAD_SOURCE_LABELS } from "@/lib/lead-constants";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
+import { getSession } from "@/lib/session";
 
 type Props = { params: Promise<{ id: string }> };
 
 export default async function LeadPage({ params }: Props) {
   const { id } = await params;
-  const lead = await getLead(id);
+  const [lead, session] = await Promise.all([getLead(id), getSession()]);
   if (!lead) notFound();
+  const canEdit = session?.role !== "ECONOMIST";
 
   return (
     <div className="space-y-5 max-w-3xl">
@@ -58,7 +60,11 @@ export default async function LeadPage({ params }: Props) {
             Менеджер: {lead.manager.name}
           </span>
         </div>
-        <StatusChanger leadId={lead.id} currentStatus={lead.status} />
+        {canEdit ? (
+          <StatusChanger leadId={lead.id} currentStatus={lead.status} />
+        ) : (
+          <Badge className="text-sm">{LEAD_STATUS_LABELS[lead.status]}</Badge>
+        )}
         {lead.description && (
           <>
             <Separator />
@@ -98,9 +104,11 @@ export default async function LeadPage({ params }: Props) {
           <h2 className="font-semibold text-gray-900">
             Замеры ({lead.measurements.length})
           </h2>
-          <LinkButton href={`/measurements/new?leadId=${lead.id}`} size="sm">
-            <Plus className="h-3.5 w-3.5 mr-1" /> Назначить замер
-          </LinkButton>
+          {canEdit && (
+            <LinkButton href={`/measurements/new?leadId=${lead.id}`} size="sm">
+              <Plus className="h-3.5 w-3.5 mr-1" /> Назначить замер
+            </LinkButton>
+          )}
         </div>
         {lead.measurements.length === 0 ? (
           <p className="text-sm text-gray-400 px-4 py-6 text-center">Замеров нет</p>
@@ -145,9 +153,11 @@ export default async function LeadPage({ params }: Props) {
               <CheckSquare className="h-4 w-4 text-gray-500" />
               <h2 className="font-semibold text-gray-900">Активные задачи ({lead.tasks.length})</h2>
             </div>
-            <LinkButton href={`/tasks/new`} size="sm" variant="outline">
-              <Plus className="h-3.5 w-3.5 mr-1" /> Добавить
-            </LinkButton>
+            {canEdit && (
+              <LinkButton href={`/tasks/new`} size="sm" variant="outline">
+                <Plus className="h-3.5 w-3.5 mr-1" /> Добавить
+              </LinkButton>
+            )}
           </div>
           <div className="divide-y">
             {lead.tasks.map((task) => {
@@ -178,7 +188,7 @@ export default async function LeadPage({ params }: Props) {
       <div className="bg-white rounded-lg border">
         <div className="flex items-center justify-between px-4 py-3 border-b">
           <h2 className="font-semibold text-gray-900">Заказ</h2>
-          {!lead.order && (
+          {!lead.order && canEdit && (
             <LinkButton href={`/orders/new?leadId=${lead.id}`} size="sm">
               <Plus className="h-3.5 w-3.5 mr-1" /> Создать заказ
             </LinkButton>

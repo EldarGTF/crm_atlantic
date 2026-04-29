@@ -5,12 +5,14 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Calendar, MapPin, User, CheckCircle, Clock } from "lucide-react";
 import { format, isPast, isToday } from "date-fns";
 import { ru } from "date-fns/locale";
+import { getSession } from "@/lib/session";
 
 type Props = { searchParams: Promise<{ filter?: string }> };
 
 export default async function MeasurementsPage({ searchParams }: Props) {
   const { filter } = await searchParams;
-  const measurements = await getMeasurements();
+  const [measurements, session] = await Promise.all([getMeasurements(), getSession()]);
+  const canEdit = session?.role !== "ECONOMIST";
 
   const pending = measurements.filter((m) => !m.doneAt);
   const done = measurements.filter((m) => m.doneAt);
@@ -20,9 +22,11 @@ export default async function MeasurementsPage({ searchParams }: Props) {
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-gray-900">Замеры</h1>
-        <LinkButton href="/measurements/new">
-          <Plus className="h-4 w-4 mr-1" /> Новый замер
-        </LinkButton>
+        {canEdit && (
+          <LinkButton href="/measurements/new">
+            <Plus className="h-4 w-4 mr-1" /> Новый замер
+          </LinkButton>
+        )}
       </div>
 
       <div className="flex gap-2">

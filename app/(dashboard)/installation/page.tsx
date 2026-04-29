@@ -11,6 +11,7 @@ export default async function InstallationPage({ searchParams }: Props) {
   const { filter } = await searchParams;
   const [all, session] = await Promise.all([getInstallations(), getSession()]);
   const role = session?.role ?? "MANAGER";
+  const canEdit = role !== "ECONOMIST";
 
   const pending = all.filter((i) => !i.doneAt);
   const done = all.filter((i) => i.doneAt);
@@ -20,9 +21,11 @@ export default async function InstallationPage({ searchParams }: Props) {
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-gray-900">Монтаж</h1>
-        <LinkButton href="/installation/new">
-          <Plus className="h-4 w-4 mr-1" /> Назначить монтаж
-        </LinkButton>
+        {canEdit && (
+          <LinkButton href="/installation/new">
+            <Plus className="h-4 w-4 mr-1" /> Назначить монтаж
+          </LinkButton>
+        )}
       </div>
 
       <div className="flex gap-2">

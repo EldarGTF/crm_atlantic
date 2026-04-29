@@ -14,6 +14,7 @@ const ROLE_LABELS: Record<string, string> = {
   PRODUCTION_GLASS:   "Цех стекла",
   PRODUCTION_PVC:     "Цех ПВХ",
   PRODUCTION_ALUMINUM:"Цех алюминия",
+  ECONOMIST:          "Экономист",
 };
 
 const ROLE_COLORS: Record<string, string> = {
@@ -25,6 +26,7 @@ const ROLE_COLORS: Record<string, string> = {
   PRODUCTION_GLASS:   "bg-cyan-100 text-cyan-700 border-cyan-200",
   PRODUCTION_PVC:     "bg-violet-100 text-violet-700 border-violet-200",
   PRODUCTION_ALUMINUM:"bg-orange-100 text-orange-700 border-orange-200",
+  ECONOMIST:          "bg-teal-100 text-teal-700 border-teal-200",
 };
 
 export default async function StaffPage() {

@@ -44,6 +44,7 @@ export async function login(
     PRODUCTION_GLASS:    "/production",
     PRODUCTION_PVC:      "/production",
     PRODUCTION_ALUMINUM: "/production",
+    ECONOMIST:           "/dashboard",
   };
   redirect(homeByRole[user.role] ?? "/dashboard");
 }
