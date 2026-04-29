@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { getOrders } from "@/app/actions/orders";
 import { format, isPast, isToday } from "date-fns";
 import { ru } from "date-fns/locale";
@@ -118,11 +118,11 @@ export default async function OrdersPage({ searchParams }: Props) {
                       <span className="flex items-center gap-1">
                         <Phone className="h-3 w-3" />{order.lead.client.phone}
                       </span>
-                      <span className="font-medium text-slate-700">{total.toLocaleString("ru")} ₽</span>
+                      <span className="font-medium text-slate-700">{total.toLocaleString("ru")} ₸</span>
                       {debt > 0 && (
                         <span className="flex items-center gap-1 text-red-500">
                           <AlertCircle className="h-3 w-3" />
-                          долг {debt.toLocaleString("ru")} ₽
+                          долг {debt.toLocaleString("ru")} ₸
                         </span>
                       )}
                       {deadline && (

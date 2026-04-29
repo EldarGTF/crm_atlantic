@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -103,7 +103,7 @@ export function OrderItemsEditor({ onChange }: Props) {
                       onChange={(e) => updateItem(idx, "profile", e.target.value)} />
                   </div>
                   <div>
-                    <label className="text-xs text-gray-500">Цена за ед. (₽) *</label>
+                    <label className="text-xs text-gray-500">Цена за ед. (₸) *</label>
                     <Input type="number" value={item.unitPrice || ""} placeholder="15000"
                       className={!item.unitPrice ? "border-red-300" : ""}
                       onChange={(e) => updateItem(idx, "unitPrice", Number(e.target.value))} />
@@ -119,7 +119,7 @@ export function OrderItemsEditor({ onChange }: Props) {
                 </button>
               </div>
               <div className="text-right text-sm font-medium text-blue-600">
-                {(item.unitPrice * item.quantity).toLocaleString("ru-RU")} ₽
+                {(item.unitPrice * item.quantity).toLocaleString("ru-RU")} ₸
               </div>
             </div>
           ))}
@@ -143,7 +143,7 @@ export function OrderItemsEditor({ onChange }: Props) {
               <Input placeholder="Откосы, подоконник..." className="w-full sm:flex-1" value={extra.name}
                 onChange={(e) => updateExtra(idx, "name", e.target.value)} />
               <div className="flex gap-2 items-center">
-                <Input type="number" placeholder="Цена ₽" className="flex-1 sm:w-28 sm:flex-none" value={extra.price || ""}
+                <Input type="number" placeholder="Цена ₸" className="flex-1 sm:w-28 sm:flex-none" value={extra.price || ""}
                   onChange={(e) => updateExtra(idx, "price", Number(e.target.value))} />
                 <button type="button" onClick={() => removeExtra(idx)} className="text-gray-300 hover:text-red-500 shrink-0">
                   <Trash2 className="h-4 w-4" />
@@ -159,16 +159,16 @@ export function OrderItemsEditor({ onChange }: Props) {
         {extrasTotal > 0 && (
           <>
             <div className="flex justify-between text-gray-500">
-              <span>Изделия</span><span>{itemsTotal.toLocaleString("ru-RU")} ₽</span>
+              <span>Изделия</span><span>{itemsTotal.toLocaleString("ru-RU")} ₸</span>
             </div>
             <div className="flex justify-between text-gray-500">
-              <span>Доп. работы</span><span>{extrasTotal.toLocaleString("ru-RU")} ₽</span>
+              <span>Доп. работы</span><span>{extrasTotal.toLocaleString("ru-RU")} ₸</span>
             </div>
           </>
         )}
         <div className="flex justify-between font-semibold text-base">
           <span>Итого (без монтажа)</span>
-          <span className="text-blue-600">{(itemsTotal + extrasTotal).toLocaleString("ru-RU")} ₽</span>
+          <span className="text-blue-600">{(itemsTotal + extrasTotal).toLocaleString("ru-RU")} ₸</span>
         </div>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
 import { getDashboardStats } from "@/app/actions/dashboard";
 import { LEAD_STATUS_LABELS } from "@/lib/lead-constants";
@@ -51,7 +51,7 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: "Заявок в месяц",   value: stats.newLeadsMonth, growth: stats.leadsGrowth,  icon: FileText,   color: "#2563EB", bg: "#EFF6FF" },
-          { label: "Выручка (месяц)",  value: stats.revenueNow > 0 ? `${(stats.revenueNow / 1000).toFixed(0)}к ₽` : "—", growth: stats.revenueGrowth, icon: TrendingUp, color: "#059669", bg: "#ECFDF5" },
+          { label: "Выручка (месяц)",  value: stats.revenueNow > 0 ? `${stats.revenueNow.toLocaleString("ru-RU")} ₸` : "—", growth: stats.revenueGrowth, icon: TrendingUp, color: "#059669", bg: "#ECFDF5" },
           { label: "Активных заказов", value: stats.activeOrders,   icon: Package,    color: "#D97706", bg: "#FFFBEB" },
           { label: "Всего клиентов",   value: stats.clientsTotal,   icon: Users,      color: "#7C3AED", bg: "#F5F3FF" },
         ].map(({ label, value, growth, icon: Icon, color, bg }) => (

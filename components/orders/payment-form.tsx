@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,7 @@ export function PaymentForm({ action }: Props) {
         </Select>
       </div>
       <div className="space-y-1">
-        <Label className="text-xs">Сумма (₽)</Label>
+        <Label className="text-xs">Сумма (₸)</Label>
         <Input name="amount" type="number" min="1" placeholder="10000" className="w-32" required />
       </div>
       <div className="space-y-1">

@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getLead } from "@/app/actions/leads";
 import { Badge } from "@/components/ui/badge";
@@ -195,7 +195,7 @@ export default async function LeadPage({ params }: Props) {
               <div className="text-sm">
                 <span className="font-medium">
                   {lead.order.items.length} позиций ·{" "}
-                  {Number(lead.order.totalAmount).toLocaleString("ru-RU")} ₽
+                  {Number(lead.order.totalAmount).toLocaleString("ru-RU")} ₸
                 </span>
               </div>
               <Badge variant={lead.order.act ? "secondary" : "default"}>

@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { getArchivedLeads } from "@/app/actions/leads";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -51,7 +51,7 @@ export default async function ArchivePage({ searchParams }: Props) {
       {totalRevenue > 0 && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 text-sm text-blue-700">
           Выручка по архивным сделкам:{" "}
-          <span className="font-semibold">{totalRevenue.toLocaleString("ru")} ₽</span>
+          <span className="font-semibold">{totalRevenue.toLocaleString("ru")} ₸</span>
         </div>
       )}
 
@@ -125,9 +125,9 @@ export default async function ArchivePage({ searchParams }: Props) {
                       </span>
                       {total > 0 && (
                         <span className="font-medium text-gray-700">
-                          {total.toLocaleString("ru")} ₽
+                          {total.toLocaleString("ru")} ₸
                           {debt > 0 && (
-                            <span className="text-red-500 ml-1">(долг {debt.toLocaleString("ru")} ₽)</span>
+                            <span className="text-red-500 ml-1">(долг {debt.toLocaleString("ru")} ₸)</span>
                           )}
                         </span>
                       )}

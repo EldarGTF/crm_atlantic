@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getOrder, signAct, archiveOrder } from "@/app/actions/orders";
 import { addPayment } from "@/app/actions/orders";
@@ -75,8 +75,8 @@ export default async function OrderPage({ params }: Props) {
                 </div>
                 {!isProduction && (
                   <div className="text-sm font-medium text-right shrink-0">
-                    <div>{Number(item.unitPrice).toLocaleString("ru-RU")} ₽/шт</div>
-                    <div className="text-blue-600">{Number(item.totalPrice).toLocaleString("ru-RU")} ₽</div>
+                    <div>{Number(item.unitPrice).toLocaleString("ru-RU")} ₸/шт</div>
+                    <div className="text-blue-600">{Number(item.totalPrice).toLocaleString("ru-RU")} ₸</div>
                   </div>
                 )}
               </div>
@@ -92,7 +92,7 @@ export default async function OrderPage({ params }: Props) {
             {order.extraWorks.map((ew) => (
               <div key={ew.id} className="px-4 py-2 flex justify-between text-sm border-t">
                 <span className="text-gray-700">{ew.name}</span>
-                {!isProduction && <span className="font-medium">{Number(ew.price).toLocaleString("ru-RU")} ₽</span>}
+                {!isProduction && <span className="font-medium">{Number(ew.price).toLocaleString("ru-RU")} ₸</span>}
               </div>
             ))}
           </>
@@ -103,14 +103,14 @@ export default async function OrderPage({ params }: Props) {
             <span className="flex items-center gap-1 text-gray-700">
               <Wrench className="h-3.5 w-3.5" /> Монтаж
             </span>
-            <span className="font-medium">{Number(order.installationCost).toLocaleString("ru-RU")} ₽</span>
+            <span className="font-medium">{Number(order.installationCost).toLocaleString("ru-RU")} ₸</span>
           </div>
         )}
 
         {!isProduction && (
           <div className="px-4 py-3 border-t bg-gray-50 flex justify-between font-semibold">
             <span>Итого</span>
-            <span className="text-blue-600">{Number(order.totalAmount).toLocaleString("ru-RU")} ₽</span>
+            <span className="text-blue-600">{Number(order.totalAmount).toLocaleString("ru-RU")} ₸</span>
           </div>
         )}
       </div>
@@ -134,16 +134,16 @@ export default async function OrderPage({ params }: Props) {
           <div className="px-4 py-3 grid grid-cols-3 gap-2 text-center text-sm">
             <div>
               <div className="text-gray-500">Сумма</div>
-              <div className="font-bold text-base sm:text-lg">{Number(order.totalAmount).toLocaleString("ru-RU")} ₽</div>
+              <div className="font-bold text-base sm:text-lg">{Number(order.totalAmount).toLocaleString("ru-RU")} ₸</div>
             </div>
             <div>
               <div className="text-gray-500">Оплачено</div>
-              <div className="font-bold text-base sm:text-lg text-green-600">{paid.toLocaleString("ru-RU")} ₽</div>
+              <div className="font-bold text-base sm:text-lg text-green-600">{paid.toLocaleString("ru-RU")} ₸</div>
             </div>
             <div>
               <div className="text-gray-500">Долг</div>
               <div className={`font-bold text-base sm:text-lg ${debt > 0 ? "text-red-500" : "text-gray-400"}`}>
-                {debt.toLocaleString("ru-RU")} ₽
+                {debt.toLocaleString("ru-RU")} ₸
               </div>
             </div>
           </div>
@@ -159,7 +159,7 @@ export default async function OrderPage({ params }: Props) {
                       {format(new Date(p.paidAt), "d MMM yyyy", { locale: ru })}
                     </span>
                   </div>
-                  <span className="font-medium">{Number(p.amount).toLocaleString("ru-RU")} ₽</span>
+                  <span className="font-medium">{Number(p.amount).toLocaleString("ru-RU")} ₸</span>
                 </div>
               ))}
             </div>
