@@ -38,7 +38,7 @@ export function SendToProductionButton({ orderId, leadId, leadStatus }: Props) {
       return;
     }
     setError(null);
-    startTransition(() => sendToProduction(orderId, leadId, selected));
+    startTransition(async () => { await sendToProduction(orderId, leadId, selected); });
   }
 
   if (!open) {
