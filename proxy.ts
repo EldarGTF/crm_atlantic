@@ -7,13 +7,21 @@ const ROUTE_ROLES: Record<string, string[]> = {
   "/staff":        ["ADMIN"],
   "/leads":        ["ADMIN", "MANAGER"],
   "/clients":      ["ADMIN", "MANAGER"],
-  "/orders":       ["ADMIN", "MANAGER"],
+  "/orders":       ["ADMIN", "MANAGER", "PRODUCTION"],
   "/production":   ["ADMIN", "MANAGER", "PRODUCTION"],
   "/archive":      ["ADMIN", "MANAGER"],
   "/measurements": ["ADMIN", "MANAGER", "MEASURER"],
   "/installation": ["ADMIN", "MANAGER", "INSTALLER"],
-  "/tasks":        ["ADMIN", "MANAGER", "MEASURER", "INSTALLER"],
+  "/tasks":        ["ADMIN", "MANAGER", "MEASURER", "INSTALLER", "PRODUCTION"],
   "/dashboard":    ["ADMIN", "MANAGER"],
+};
+
+const HOME_BY_ROLE: Record<string, string> = {
+  ADMIN:      "/dashboard",
+  MANAGER:    "/dashboard",
+  MEASURER:   "/measurements",
+  INSTALLER:  "/installation",
+  PRODUCTION: "/production",
 };
 
 export async function proxy(request: NextRequest) {
@@ -28,7 +36,8 @@ export async function proxy(request: NextRequest) {
   }
 
   if (session && isPublic) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    const home = HOME_BY_ROLE[session.role] ?? "/dashboard";
+    return NextResponse.redirect(new URL(home, request.url));
   }
 
   if (session) {
@@ -36,7 +45,8 @@ export async function proxy(request: NextRequest) {
       (route) => pathname === route || pathname.startsWith(route + "/")
     );
     if (matchedRoute && !ROUTE_ROLES[matchedRoute].includes(session.role)) {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
+      const home = HOME_BY_ROLE[session.role] ?? "/dashboard";
+      return NextResponse.redirect(new URL(home, request.url));
     }
   }
 
