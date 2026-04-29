@@ -4,15 +4,17 @@ import { useTransition } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { markInstallationDone } from "@/app/actions/installation";
-import { Calendar, MapPin, User, CheckCircle, ChevronRight } from "lucide-react";
+import { markInstallationDone, takeInstallationInWork } from "@/app/actions/installation";
+import { Calendar, MapPin, User, CheckCircle, ChevronRight, PlayCircle } from "lucide-react";
 import { format, isPast, isToday } from "date-fns";
 import { ru } from "date-fns/locale";
+import { toast } from "sonner";
 
 type Props = {
   installation: {
     id: string;
     scheduledAt: Date;
+    inWorkAt: Date | null;
     doneAt: Date | null;
     address: string;
     notes: string | null;
@@ -31,6 +33,14 @@ export function InstallationCard({ installation: inst, role }: Props) {
   const scheduled = new Date(inst.scheduledAt);
   const overdue = !inst.doneAt && isPast(scheduled) && !isToday(scheduled);
   const today = !inst.doneAt && isToday(scheduled);
+  const canAct = role === "ADMIN" || role === "INSTALLER";
+
+  function handleTakeInWork() {
+    startTransition(async () => {
+      await takeInstallationInWork(inst.id);
+      toast.success("Монтаж взят в работу");
+    });
+  }
 
   function handleDone() {
     startTransition(() =>
@@ -50,10 +60,12 @@ export function InstallationCard({ installation: inst, role }: Props) {
               <Badge className="bg-green-100 text-green-700 border-green-200">
                 <CheckCircle className="h-3 w-3 mr-1" /> Выполнен
               </Badge>
+            ) : inst.inWorkAt ? (
+              <Badge className="bg-amber-100 text-amber-700 border-amber-200">В работе</Badge>
             ) : overdue ? (
               <Badge className="bg-red-100 text-red-700 border-red-200">Просрочен</Badge>
             ) : today ? (
-              <Badge className="bg-amber-100 text-amber-700 border-amber-200">Сегодня</Badge>
+              <Badge className="bg-blue-100 text-blue-700 border-blue-200">Сегодня</Badge>
             ) : (
               <Badge variant="outline">Запланирован</Badge>
             )}
@@ -84,11 +96,32 @@ export function InstallationCard({ installation: inst, role }: Props) {
         <p className="text-sm text-gray-500 bg-gray-50 rounded px-3 py-2">{inst.notes}</p>
       )}
 
-      {!inst.doneAt && (role === "ADMIN" || role === "INSTALLER") && (
-        <Button size="sm" onClick={handleDone} disabled={isPending}>
-          <CheckCircle className="h-3.5 w-3.5 mr-1" />
-          {isPending ? "..." : "Отметить выполненным"}
-        </Button>
+      {inst.inWorkAt && !inst.doneAt && (
+        <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+          <span className="font-medium">В работе</span>
+          <span className="text-amber-500">·</span>
+          <span className="text-amber-600">{inst.installer.name}</span>
+          <span className="text-amber-400 text-xs ml-auto">
+            {format(new Date(inst.inWorkAt), "d MMM, HH:mm", { locale: ru })}
+          </span>
+        </div>
+      )}
+
+      {!inst.doneAt && canAct && (
+        <div className="flex gap-2 flex-wrap">
+          {!inst.inWorkAt && (
+            <Button size="sm" variant="outline" onClick={handleTakeInWork} disabled={isPending}>
+              <PlayCircle className="h-3.5 w-3.5 mr-1" />
+              {isPending ? "..." : "Взять в работу"}
+            </Button>
+          )}
+          {inst.inWorkAt && (
+            <Button size="sm" onClick={handleDone} disabled={isPending}>
+              <CheckCircle className="h-3.5 w-3.5 mr-1" />
+              {isPending ? "..." : "Отметить выполненным"}
+            </Button>
+          )}
+        </div>
       )}
     </div>
   );

@@ -280,6 +280,7 @@ model Installation {
   orderId     String    @unique
   installerId String
   scheduledAt DateTime
+  inWorkAt    DateTime?
   doneAt      DateTime?
   address     String
   notes       String?
