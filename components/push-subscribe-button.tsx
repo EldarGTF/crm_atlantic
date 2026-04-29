@@ -3,15 +3,6 @@
 import { useState, useEffect } from "react";
 import { Bell, BellOff } from "lucide-react";
 
-function urlBase64ToUint8Array(base64: string): Uint8Array {
-  const padding = "=".repeat((4 - (base64.length % 4)) % 4);
-  const b64 = (base64 + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const raw = atob(b64);
-  const arr = new Uint8Array(raw.length);
-  for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
-  return arr;
-}
-
 type Status = "loading" | "subscribed" | "unsubscribed" | "unsupported";
 
 export function PushSubscribeButton() {
@@ -50,7 +41,7 @@ export function PushSubscribeButton() {
         if (!vapidKey) return;
         const sub = await reg.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(vapidKey),
+          applicationServerKey: vapidKey,
         });
         await fetch("/api/push/subscribe", {
           method: "POST",
