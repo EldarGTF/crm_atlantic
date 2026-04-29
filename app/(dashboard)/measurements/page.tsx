@@ -10,8 +10,7 @@ type Props = { searchParams: Promise<{ filter?: string }> };
 
 export default async function MeasurementsPage({ searchParams }: Props) {
   const { filter } = await searchParams;
-  const showDone = filter === "done";
-  const measurements = await getMeasurements(showDone ? true : showDone === false ? false : undefined);
+  const measurements = await getMeasurements();
 
   const pending = measurements.filter((m) => !m.doneAt);
   const done = measurements.filter((m) => m.doneAt);
