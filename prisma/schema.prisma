@@ -203,8 +203,32 @@ model Order {
   installation    Installation?
   act             Act?
   productionDepts OrderProductionDept[]
+  warrantyClaims  WarrantyClaim[]
 
   @@map("orders")
+}
+
+// ─── Гарантийные обращения ────────────────────────────────────────────────────
+
+enum WarrantyStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+}
+
+model WarrantyClaim {
+  id          String         @id @default(cuid())
+  orderId     String
+  description String
+  status      WarrantyStatus @default(OPEN)
+  resolvedAt  DateTime?
+  resolution  String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("warranty_claims")
 }
 
 // ─── Цехи производства ────────────────────────────────────────────────────────

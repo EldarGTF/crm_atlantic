@@ -263,6 +263,7 @@ export async function getOrder(id: string) {
       files: { orderBy: { createdAt: "asc" } },
       act: true,
       installation: { include: { installer: { select: { name: true } } } },
+      warrantyClaims: { orderBy: { createdAt: "desc" } },
     },
   });
   if (!order) return null;

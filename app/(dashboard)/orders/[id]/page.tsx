@@ -13,6 +13,7 @@ import { SendToProductionButton } from "@/components/orders/send-to-production-b
 import { FileUploader } from "@/components/file-uploader";
 import { addOrderFile, deleteOrderFile } from "@/app/actions/orders-files";
 import { getSession } from "@/lib/session";
+import { WarrantySection } from "@/components/orders/warranty-section";
 
 const PAYMENT_STATUS = { UNPAID: "Не оплачен", PREPAID: "Предоплата", PAID: "Оплачен" };
 const PAYMENT_STATUS_COLORS = { UNPAID: "destructive", PREPAID: "default", PAID: "secondary" } as const;
@@ -308,6 +309,15 @@ export default async function OrderPage({ params }: Props) {
           onDelete={canEdit ? async (fileId) => { "use server"; await deleteOrderFile(fileId, id); } : undefined}
         />
       </div>
+
+      {/* Гарантийные обращения — только для ADMIN/MANAGER/ECONOMIST */}
+      {!isProduction && (
+        <WarrantySection
+          orderId={id}
+          claims={order.warrantyClaims ?? []}
+          canEdit={canEdit}
+        />
+      )}
 
       {/* Действия */}
       {!isProduction && canEdit && (
