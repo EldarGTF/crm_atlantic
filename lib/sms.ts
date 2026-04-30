@@ -4,7 +4,7 @@ import { ru } from "date-fns/locale";
 const API_KEY = process.env.MOBIZON_API_KEY;
 const SENDER = process.env.MOBIZON_SENDER ?? "Atlantic";
 const API_DOMAIN = process.env.MOBIZON_DOMAIN ?? "api.mobizon.kz";
-const BASE_URL = `https://${API_DOMAIN}/service/message/sendSmsMessage`;
+const BASE_URL = `https://${API_DOMAIN}/service/message/sendSMSMessage`;
 
 function normalizePhone(phone: string): string {
   const digits = phone.replace(/\D/g, "");
@@ -16,7 +16,7 @@ function normalizePhone(phone: string): string {
 async function sendSms(phone: string, text: string): Promise<void> {
   if (!API_KEY) return;
   const recipient = normalizePhone(phone);
-  const params = new URLSearchParams({ apiKey: API_KEY, recipient, text, name: SENDER });
+  const params = new URLSearchParams({ apiKey: API_KEY, recipient, text, from: SENDER });
   await fetch(`${BASE_URL}?output=json&api=v1`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
