@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
-import { Phone, AlertCircle, Clock, CheckCircle, ShieldCheck, Archive } from "lucide-react";
+import { Phone, AlertCircle, Clock, CheckCircle, ShieldCheck, Archive, Plus } from "lucide-react";
 import { WarrantyStatusActions } from "@/components/orders/warranty-status-actions";
 
 type Props = { searchParams: Promise<{ status?: string }> };
@@ -33,9 +33,19 @@ export default async function WarrantyPage({ searchParams }: Props) {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-[1.375rem] font-bold tracking-tight text-slate-900">Гарантийные обращения</h1>
-        <p className="text-sm text-slate-500 mt-0.5">Все обращения по заказам, включая архивные</p>
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="text-[1.375rem] font-bold tracking-tight text-slate-900">Гарантийные обращения</h1>
+          <p className="text-sm text-slate-500 mt-0.5">Все обращения по заказам, включая архивные</p>
+        </div>
+        {canEdit && (
+          <Link
+            href="/warranty/new"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+          >
+            <Plus className="h-4 w-4" /> Новое обращение
+          </Link>
+        )}
       </div>
 
       <div className="flex gap-2 flex-wrap">
