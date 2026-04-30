@@ -3,7 +3,8 @@ import { ru } from "date-fns/locale";
 
 const API_KEY = process.env.MOBIZON_API_KEY;
 const SENDER = process.env.MOBIZON_SENDER ?? "Atlantic";
-const BASE_URL = "https://api.mobizon.kz/service/message/sendSmsMessage";
+const API_DOMAIN = process.env.MOBIZON_DOMAIN ?? "api.mobizon.kz";
+const BASE_URL = `https://${API_DOMAIN}/service/message/sendSmsMessage`;
 
 function normalizePhone(phone: string): string {
   const digits = phone.replace(/\D/g, "");
