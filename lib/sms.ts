@@ -46,16 +46,38 @@ export function formatDate(date: Date): string {
 }
 
 export async function sendMeasurementSms(phone: string, clientName: string, scheduledAt: Date, address: string, measurerName: string) {
-  const text = `Здравствуйте, ${clientName}! Замер назначен на ${formatDate(scheduledAt)}. Адрес: ${address}. Замерщик: ${measurerName}. — Atlantic Окна`;
+  const text = [
+    `Здравствуйте, ${clientName}!`,
+    ``,
+    `Замер окон назначен на ${formatDate(scheduledAt)}.`,
+    `Адрес: ${address}`,
+    `Замерщик: ${measurerName}`,
+    ``,
+    `Atlantic Окна`,
+  ].join("\n");
   await sendSms(phone, text).catch(() => {});
 }
 
 export async function sendInstallationSms(phone: string, clientName: string, scheduledAt: Date, address: string, installerName: string) {
-  const text = `Здравствуйте, ${clientName}! Монтаж окон назначен на ${formatDate(scheduledAt)}. Адрес: ${address}. Мастер: ${installerName}. — Atlantic Окна`;
+  const text = [
+    `Здравствуйте, ${clientName}!`,
+    ``,
+    `Монтаж окон назначен на ${formatDate(scheduledAt)}.`,
+    `Адрес: ${address}`,
+    `Мастер: ${installerName}`,
+    ``,
+    `Atlantic Окна`,
+  ].join("\n");
   await sendSms(phone, text).catch(() => {});
 }
 
 export async function sendRescheduleSms(phone: string, clientName: string, type: "замер" | "монтаж", scheduledAt: Date) {
-  const text = `Здравствуйте, ${clientName}! Ваш ${type} перенесён на ${formatDate(scheduledAt)}. — Atlantic Окна`;
+  const text = [
+    `Здравствуйте, ${clientName}!`,
+    ``,
+    `Дата ${type === "замер" ? "замера" : "монтажа"} перенесена на ${formatDate(scheduledAt)}.`,
+    ``,
+    `Atlantic Окна`,
+  ].join("\n");
   await sendSms(phone, text).catch(() => {});
 }
