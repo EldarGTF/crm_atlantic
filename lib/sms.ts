@@ -14,14 +14,27 @@ function normalizePhone(phone: string): string {
 }
 
 async function sendSms(phone: string, text: string): Promise<void> {
-  if (!API_KEY) return;
+  if (!API_KEY) {
+    console.warn("[SMS] MOBIZON_API_KEY not set, skipping");
+    return;
+  }
   const recipient = normalizePhone(phone);
   const params = new URLSearchParams({ apiKey: API_KEY, recipient, text, from: SENDER });
-  await fetch(`${BASE_URL}?output=json&api=v1`, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: params.toString(),
-  });
+  try {
+    const res = await fetch(`${BASE_URL}?output=json&api=v1`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: params.toString(),
+    });
+    const json = await res.json();
+    if (json?.code === 0) {
+      console.log(`[SMS] Sent to ${recipient}, messageId: ${json?.data?.messageId}`);
+    } else {
+      console.error(`[SMS] Error sending to ${recipient}:`, json?.message, json?.code);
+    }
+  } catch (e) {
+    console.error(`[SMS] Request failed for ${recipient}:`, e);
+  }
 }
 
 export function formatDate(date: Date): string {
