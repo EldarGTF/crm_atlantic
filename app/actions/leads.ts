@@ -35,7 +35,7 @@ export async function createLead(_state: unknown, formData: FormData) {
       source: parsed.data.source,
       description: parsed.data.description || null,
       statusHistory: {
-        create: { status: LeadStatus.NEW },
+        create: { status: LeadStatus.NEW, userId: session.userId },
       },
     },
   });
@@ -53,7 +53,7 @@ export async function updateLeadStatus(leadId: string, status: LeadStatus, note?
     data: {
       status,
       statusHistory: {
-        create: { status, note: note || null },
+        create: { status, note: note || null, userId: session.userId },
       },
     },
   });
@@ -66,7 +66,7 @@ export async function getLeads(search?: string, status?: string) {
   return prisma.lead.findMany({
     where: {
       archived: false,
-      order: null, // только заявки без заказа
+      order: null,
       ...(status ? { status: status as LeadStatus } : {}),
       ...(search
         ? {
@@ -93,7 +93,10 @@ export async function getLead(id: string) {
     include: {
       client: true,
       manager: { select: { id: true, name: true } },
-      statusHistory: { orderBy: { createdAt: "desc" } },
+      statusHistory: {
+        orderBy: { createdAt: "desc" },
+        include: { user: { select: { name: true } } },
+      },
       measurements: {
         orderBy: { scheduledAt: "asc" },
         include: {

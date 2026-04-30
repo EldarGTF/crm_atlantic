@@ -43,7 +43,7 @@ export async function createMeasurement(_state: unknown, formData: FormData) {
     where: { id: parsed.data.leadId },
     data: {
       status: "MEASUREMENT_SCHEDULED",
-      statusHistory: { create: { status: "MEASUREMENT_SCHEDULED", note: "Назначен замер" } },
+      statusHistory: { create: { status: "MEASUREMENT_SCHEDULED", note: "Назначен замер", userId: session.userId } },
     },
   });
 
@@ -58,15 +58,30 @@ export async function createMeasurement(_state: unknown, formData: FormData) {
 }
 
 export async function takeMeasurementInWork(id: string) {
+  const session = await getSession();
+
   await prisma.measurement.update({
     where: { id },
     data: { inWorkAt: new Date() },
   });
+
+  if (session) {
+    const m = await prisma.measurement.findUnique({ where: { id }, select: { leadId: true } });
+    if (m) {
+      await prisma.leadHistory.create({
+        data: { leadId: m.leadId, status: "MEASUREMENT_SCHEDULED", note: "Замер взят в работу", userId: session.userId },
+      });
+      revalidatePath(`/leads/${m.leadId}`);
+    }
+  }
+
   revalidatePath(`/measurements/${id}`);
   revalidatePath("/measurements");
 }
 
 export async function markMeasurementDone(id: string, leadId: string) {
+  const session = await getSession();
+
   await prisma.measurement.update({
     where: { id },
     data: { doneAt: new Date() },
@@ -76,7 +91,7 @@ export async function markMeasurementDone(id: string, leadId: string) {
     where: { id: leadId },
     data: {
       status: "MEASUREMENT_DONE",
-      statusHistory: { create: { status: "MEASUREMENT_DONE", note: "Замер выполнен" } },
+      statusHistory: { create: { status: "MEASUREMENT_DONE", note: "Замер выполнен", userId: session?.userId ?? null } },
     },
   });
 
@@ -85,10 +100,23 @@ export async function markMeasurementDone(id: string, leadId: string) {
 }
 
 export async function rescheduleMeasurement(id: string, scheduledAt: string, address?: string) {
+  const session = await getSession();
+
   await prisma.measurement.update({
     where: { id },
     data: { scheduledAt: new Date(scheduledAt), ...(address ? { address } : {}) },
   });
+
+  if (session) {
+    const m = await prisma.measurement.findUnique({ where: { id }, select: { leadId: true } });
+    if (m) {
+      await prisma.leadHistory.create({
+        data: { leadId: m.leadId, status: "MEASUREMENT_SCHEDULED", note: "Дата замера перенесена", userId: session.userId },
+      });
+      revalidatePath(`/leads/${m.leadId}`);
+    }
+  }
+
   revalidatePath(`/measurements/${id}`);
   revalidatePath("/measurements");
 }
@@ -98,7 +126,7 @@ export async function addMeasurementFile(
   file: { name: string; url: string; size: number }
 ) {
   await prisma.measurementFile.create({
-    data: { measurementId, ...file },
+    data: { measurementId, name: file.name, url: file.url, size: file.size },
   });
   revalidatePath(`/measurements/${measurementId}`);
 }
@@ -112,8 +140,8 @@ export async function getMeasurement(id: string) {
   return prisma.measurement.findUnique({
     where: { id },
     include: {
-      lead: { include: { client: true } },
       measurer: { select: { name: true } },
+      lead: { include: { client: true } },
       files: { orderBy: { createdAt: "asc" } },
     },
   });
@@ -121,18 +149,18 @@ export async function getMeasurement(id: string) {
 
 export async function getMeasurers() {
   return prisma.user.findMany({
-    where: { active: true, role: { in: ["ADMIN", "MANAGER", "MEASURER"] } },
+    where: { active: true, role: { in: ["ADMIN", "MEASURER", "MANAGER"] } },
     select: { id: true, name: true },
     orderBy: { name: "asc" },
   });
 }
 
-export async function getMeasurements(done?: boolean) {
+export async function getMeasurements() {
   return prisma.measurement.findMany({
-    where: done !== undefined ? { doneAt: done ? { not: null } : null } : undefined,
+    where: { lead: { archived: false } },
     include: {
-      lead: { include: { client: { select: { name: true, phone: true } } } },
       measurer: { select: { name: true } },
+      lead: { include: { client: { select: { name: true, phone: true } } } },
     },
     orderBy: { scheduledAt: "asc" },
   });

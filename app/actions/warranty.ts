@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { logOrderActivity } from "@/lib/activity";
 
 export async function createWarrantyClaim(orderId: string, description: string) {
   const session = await getSession();
@@ -13,6 +14,7 @@ export async function createWarrantyClaim(orderId: string, description: string) 
   await prisma.warrantyClaim.create({
     data: { orderId, description: description.trim() },
   });
+  await logOrderActivity(orderId, session.userId, `Гарантийное обращение: ${description.trim().slice(0, 80)}`);
   revalidatePath(`/orders/${orderId}`);
   revalidatePath("/warranty");
 }
@@ -23,6 +25,8 @@ export async function updateWarrantyStatus(
   status: "OPEN" | "IN_PROGRESS" | "RESOLVED",
   resolution?: string
 ) {
+  const session = await getSession();
+
   await prisma.warrantyClaim.update({
     where: { id: claimId },
     data: {
@@ -31,6 +35,10 @@ export async function updateWarrantyStatus(
       resolution: status === "RESOLVED" ? (resolution ?? null) : null,
     },
   });
+
+  const STATUS_LABELS: Record<string, string> = { OPEN: "Открыто", IN_PROGRESS: "В работе", RESOLVED: "Решено" };
+  if (session) await logOrderActivity(orderId, session.userId, `Гарантийное обращение — статус: ${STATUS_LABELS[status] ?? status}`);
+
   revalidatePath(`/orders/${orderId}`);
   revalidatePath("/warranty");
 }

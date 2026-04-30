@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { sendPushToRole } from "@/lib/push";
+import { logOrderActivity } from "@/lib/activity";
 
 const OrderItemSchema = z.object({
   productType: z.string().min(1),
@@ -90,9 +91,11 @@ export async function createOrder(_state: unknown, formData: FormData) {
     where: { id: leadId },
     data: {
       status: "AGREED",
-      statusHistory: { create: { status: "AGREED", note: "Заказ создан" } },
+      statusHistory: { create: { status: "AGREED", note: "Заказ создан", userId: session.userId } },
     },
   });
+
+  await logOrderActivity(order.id, session.userId, "Заказ создан");
 
   revalidatePath(`/leads/${leadId}`);
   redirect(`/orders/${order.id}`);
@@ -119,6 +122,9 @@ export async function addPayment(orderId: string, _state: unknown, formData: For
     data: { prepaidAmount: paid, paymentStatus },
   });
 
+  const PAYMENT_TYPE_LABELS: Record<string, string> = { PREPAYMENT: "Предоплата", FINAL: "Остаток", OTHER: "Другое" };
+  await logOrderActivity(orderId, session.userId, `Оплата ${amount.toLocaleString("ru")} ₸ — ${PAYMENT_TYPE_LABELS[type] ?? type}`);
+
   revalidatePath(`/orders/${orderId}`);
 }
 
@@ -127,6 +133,8 @@ export async function signAct(
   leadId: string,
   actFile?: { name: string; url: string; size: number } | null
 ) {
+  const session = await getSession();
+
   const order = await prisma.order.findUnique({
     where: { id: orderId },
     select: { totalAmount: true, prepaidAmount: true },
@@ -149,24 +157,31 @@ export async function signAct(
     where: { id: leadId },
     data: {
       status: "ACT_SIGNED",
-      statusHistory: { create: { status: "ACT_SIGNED", note: "Акт выполненных работ подписан" } },
+      statusHistory: { create: { status: "ACT_SIGNED", note: "Акт выполненных работ подписан", userId: session?.userId ?? null } },
     },
   });
+
+  if (session) await logOrderActivity(orderId, session.userId, "Акт выполненных работ подписан");
 
   revalidatePath(`/orders/${orderId}`);
   revalidatePath(`/leads/${leadId}`);
 }
 
 export async function archiveOrder(orderId: string, leadId: string) {
+  const session = await getSession();
+
   await prisma.order.update({ where: { id: orderId }, data: { archived: true } });
   await prisma.lead.update({
     where: { id: leadId },
     data: {
       archived: true,
       status: "CLOSED",
-      statusHistory: { create: { status: "CLOSED", note: "Сделка закрыта" } },
+      statusHistory: { create: { status: "CLOSED", note: "Сделка закрыта", userId: session?.userId ?? null } },
     },
   });
+
+  if (session) await logOrderActivity(orderId, session.userId, "Сделка закрыта, заказ перемещён в архив");
+
   revalidatePath(`/orders/${orderId}`);
   redirect("/leads");
 }
@@ -180,6 +195,10 @@ export async function sendToProduction(
   files: OrderFileInput[] = []
 ) {
   if (!depts.length) return { message: "Выберите хотя бы один цех" };
+  const session = await getSession();
+
+  const DEPT_NAMES: Record<string, string> = { GLASS: "Стекло", PVC: "ПВХ", ALUMINUM: "Алюминий" };
+  const deptLabels = depts.map((d) => DEPT_NAMES[d] ?? d).join(", ");
 
   await prisma.orderProductionDept.deleteMany({ where: { orderId } });
   await prisma.orderProductionDept.createMany({
@@ -196,9 +215,11 @@ export async function sendToProduction(
     where: { id: leadId },
     data: {
       status: "SENT_TO_PRODUCTION",
-      statusHistory: { create: { status: "SENT_TO_PRODUCTION", note: "Заказ отправлен в производство" } },
+      statusHistory: { create: { status: "SENT_TO_PRODUCTION", note: `Отправлен в производство — ${deptLabels}`, userId: session?.userId ?? null } },
     },
   });
+
+  if (session) await logOrderActivity(orderId, session.userId, `Отправлен в производство — ${deptLabels}`);
 
   const deptRoleMap: Record<string, string> = {
     GLASS: "PRODUCTION_GLASS",
@@ -264,6 +285,7 @@ export async function getOrder(id: string) {
       act: true,
       installation: { include: { installer: { select: { name: true } } } },
       warrantyClaims: { orderBy: { createdAt: "desc" } },
+      activities: { orderBy: { createdAt: "asc" }, include: { user: { select: { name: true } } } },
     },
   });
   if (!order) return null;

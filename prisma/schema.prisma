@@ -46,6 +46,8 @@ model User {
   tasksCreated      Task[]             @relation("TaskCreator")
   installations     Installation[]
   pushSubscriptions PushSubscription[]
+  leadHistory       LeadHistory[]
+  orderActivities   OrderActivity[]
 
   @@map("users")
 }
@@ -127,11 +129,13 @@ model Lead {
 model LeadHistory {
   id        String     @id @default(cuid())
   leadId    String
+  userId    String?
   status    LeadStatus
   note      String?
   createdAt DateTime   @default(now())
 
-  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  lead Lead  @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@map("lead_history")
 }
@@ -204,8 +208,25 @@ model Order {
   act             Act?
   productionDepts OrderProductionDept[]
   warrantyClaims  WarrantyClaim[]
+  activities      OrderActivity[]
 
   @@map("orders")
+}
+
+// ─── Журнал действий по заказу ────────────────────────────────────────────────
+
+model OrderActivity {
+  id        String   @id @default(cuid())
+  orderId   String
+  userId    String
+  action    String
+  createdAt DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("order_activities")
 }
 
 // ─── Гарантийные обращения ────────────────────────────────────────────────────

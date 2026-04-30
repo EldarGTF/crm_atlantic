@@ -90,6 +90,11 @@ export default async function LeadPage({ params }: Props) {
                   <span className="text-xs text-gray-400">
                     {format(new Date(h.createdAt), "d MMM yyyy, HH:mm", { locale: ru })}
                   </span>
+                  {h.user && (
+                    <span className="text-xs font-medium text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
+                      {h.user.name}
+                    </span>
+                  )}
                 </div>
                 {h.note && <p className="text-sm text-gray-600 mt-1">{h.note}</p>}
               </div>
