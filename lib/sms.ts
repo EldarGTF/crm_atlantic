@@ -49,11 +49,11 @@ export async function sendMeasurementSms(phone: string, clientName: string, sche
   const text = [
     `Здравствуйте, ${clientName}!`,
     ``,
-    `Замер окон назначен на ${formatDate(scheduledAt)}.`,
+    `Замер назначен на ${formatDate(scheduledAt)}.`,
     `Адрес: ${address}`,
     `Замерщик: ${measurerName}`,
     ``,
-    `Atlantic Окна`,
+    `Atlantic Company`,
   ].join("\n");
   await sendSms(phone, text).catch(() => {});
 }
@@ -62,11 +62,11 @@ export async function sendInstallationSms(phone: string, clientName: string, sch
   const text = [
     `Здравствуйте, ${clientName}!`,
     ``,
-    `Монтаж окон назначен на ${formatDate(scheduledAt)}.`,
+    `Монтаж назначен на ${formatDate(scheduledAt)}.`,
     `Адрес: ${address}`,
     `Мастер: ${installerName}`,
     ``,
-    `Atlantic Окна`,
+    `Atlantic Company`,
   ].join("\n");
   await sendSms(phone, text).catch(() => {});
 }
@@ -77,7 +77,7 @@ export async function sendRescheduleSms(phone: string, clientName: string, type:
     ``,
     `Дата ${type === "замер" ? "замера" : "монтажа"} перенесена на ${formatDate(scheduledAt)}.`,
     ``,
-    `Atlantic Окна`,
+    `Atlantic Company`,
   ].join("\n");
   await sendSms(phone, text).catch(() => {});
 }
