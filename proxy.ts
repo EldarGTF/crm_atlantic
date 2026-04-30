@@ -15,6 +15,7 @@ const ROUTE_ROLES: Record<string, string[]> = {
   "/tasks":        ["ADMIN", "MANAGER", "ECONOMIST", "MEASURER", "INSTALLER", "PRODUCTION", "PRODUCTION_GLASS", "PRODUCTION_PVC", "PRODUCTION_ALUMINUM"],
   "/dashboard":    ["ADMIN", "MANAGER", "ECONOMIST"],
   "/analytics":    ["ADMIN", "MANAGER", "ECONOMIST"],
+  "/today":        ["ADMIN", "MANAGER", "ECONOMIST", "MEASURER", "INSTALLER", "PRODUCTION", "PRODUCTION_GLASS", "PRODUCTION_PVC", "PRODUCTION_ALUMINUM"],
 };
 
 const HOME_BY_ROLE: Record<string, string> = {
