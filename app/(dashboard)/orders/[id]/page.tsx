@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ChevronLeft, CheckCircle, Package, Wrench, HardHat, Calendar, MapPin, User, Clock } from "lucide-react";
 import { format } from "date-fns";
+import { LEAD_STATUS_LABELS } from "@/lib/lead-constants";
 import { ru } from "date-fns/locale";
 import { PaymentForm } from "@/components/orders/payment-form";
 import { OrderActions } from "@/components/orders/order-actions";
@@ -319,33 +320,59 @@ export default async function OrderPage({ params }: Props) {
         />
       )}
 
-      {/* История действий */}
-      {!isProduction && order.activities.length > 0 && (
-        <div className="bg-white rounded-lg border">
-          <div className="px-4 py-3 border-b flex items-center gap-2">
-            <Clock className="h-4 w-4 text-gray-400" />
-            <h2 className="font-semibold text-gray-900">История</h2>
-          </div>
-          <div className="divide-y">
-            {[...order.activities].reverse().map((a) => (
-              <div key={a.id} className="px-4 py-3 flex items-start gap-3">
-                <div className="w-1.5 h-1.5 rounded-full bg-slate-300 mt-2 shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-slate-700">{a.action}</p>
-                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                    <span className="text-xs font-medium text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
-                      {a.user.name}
-                    </span>
-                    <span className="text-xs text-slate-400">
-                      {format(new Date(a.createdAt), "d MMM yyyy, HH:mm", { locale: ru })}
-                    </span>
+      {/* История — объединённая лента заявки и заказа */}
+      {!isProduction && (() => {
+        const leadEvents = order.lead.statusHistory.map((h) => ({
+          id: `lead-${h.id}`,
+          createdAt: new Date(h.createdAt),
+          label: LEAD_STATUS_LABELS[h.status] ?? h.status,
+          note: h.note ?? null,
+          userName: h.user?.name ?? null,
+          isStatus: true,
+        }));
+        const orderEvents = order.activities.map((a) => ({
+          id: `order-${a.id}`,
+          createdAt: new Date(a.createdAt),
+          label: a.action,
+          note: null,
+          userName: a.user.name,
+          isStatus: false,
+        }));
+        const timeline = [...leadEvents, ...orderEvents].sort(
+          (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+        );
+        if (timeline.length === 0) return null;
+        return (
+          <div className="bg-white rounded-lg border">
+            <div className="px-4 py-3 border-b flex items-center gap-2">
+              <Clock className="h-4 w-4 text-gray-400" />
+              <h2 className="font-semibold text-gray-900">История</h2>
+              <span className="text-xs text-slate-400 ml-auto">{timeline.length} событий</span>
+            </div>
+            <div className="divide-y">
+              {timeline.map((e) => (
+                <div key={e.id} className="px-4 py-3 flex items-start gap-3">
+                  <div className={`w-1.5 h-1.5 rounded-full mt-2 shrink-0 ${e.isStatus ? "bg-blue-300" : "bg-slate-300"}`} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-slate-700">{e.label}</p>
+                    {e.note && <p className="text-xs text-slate-500 mt-0.5">{e.note}</p>}
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                      {e.userName && (
+                        <span className="text-xs font-medium text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
+                          {e.userName}
+                        </span>
+                      )}
+                      <span className="text-xs text-slate-400">
+                        {format(e.createdAt, "d MMM yyyy, HH:mm", { locale: ru })}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Действия */}
       {!isProduction && canEdit && (

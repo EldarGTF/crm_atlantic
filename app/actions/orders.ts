@@ -277,7 +277,15 @@ export async function getOrder(id: string) {
   const order = await prisma.order.findUnique({
     where: { id },
     include: {
-      lead: { include: { client: true } },
+      lead: {
+        include: {
+          client: true,
+          statusHistory: {
+            orderBy: { createdAt: "asc" },
+            include: { user: { select: { name: true } } },
+          },
+        },
+      },
       items: { orderBy: { id: "asc" } },
       extraWorks: true,
       payments: { orderBy: { paidAt: "desc" } },
