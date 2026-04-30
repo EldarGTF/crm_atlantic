@@ -14,6 +14,7 @@ export async function createWarrantyClaim(orderId: string, description: string) 
     data: { orderId, description: description.trim() },
   });
   revalidatePath(`/orders/${orderId}`);
+  revalidatePath("/warranty");
 }
 
 export async function updateWarrantyStatus(
@@ -31,9 +32,27 @@ export async function updateWarrantyStatus(
     },
   });
   revalidatePath(`/orders/${orderId}`);
+  revalidatePath("/warranty");
 }
 
 export async function deleteWarrantyClaim(claimId: string, orderId: string) {
   await prisma.warrantyClaim.delete({ where: { id: claimId } });
   revalidatePath(`/orders/${orderId}`);
+  revalidatePath("/warranty");
+}
+
+export async function getAllWarrantyClaims(statusFilter?: "OPEN" | "IN_PROGRESS" | "RESOLVED") {
+  return prisma.warrantyClaim.findMany({
+    where: statusFilter ? { status: statusFilter } : { status: { not: "RESOLVED" } },
+    include: {
+      order: {
+        select: {
+          id: true,
+          archived: true,
+          lead: { select: { client: { select: { name: true, phone: true } } } },
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
 }

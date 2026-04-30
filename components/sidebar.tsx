@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Users, FileText, Ruler, Package,
-  Wrench, Archive, CheckSquare, HardHat, UserCog, LogOut, Menu, X, BarChart3, CalendarCheck,
+  Wrench, Archive, CheckSquare, HardHat, UserCog, LogOut, Menu, X, BarChart3, CalendarCheck, ShieldCheck,
 } from "lucide-react";
 import { useState } from "react";
 import { logout } from "@/app/actions/auth";
@@ -39,6 +39,7 @@ const navGroups = [
     label: "Управление",
     items: [
       { href: "/tasks",        label: "Задачи",        icon: CheckSquare,     roles: ALL_ROLES },
+      { href: "/warranty",     label: "Гарантия",      icon: ShieldCheck,     roles: ["ADMIN", "MANAGER", "ECONOMIST"] },
       { href: "/archive",      label: "Архив",         icon: Archive,         roles: ["ADMIN", "MANAGER", "ECONOMIST"] },
       { href: "/staff",        label: "Сотрудники",    icon: UserCog,         roles: ["ADMIN"] },
     ],
