@@ -6,6 +6,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { sendPushToUser } from "@/lib/push";
+import { sendMeasurementSms, sendRescheduleSms } from "@/lib/sms";
 
 const MeasurementSchema = z.object({
   leadId: z.string().min(1),
@@ -29,6 +30,11 @@ export async function createMeasurement(_state: unknown, formData: FormData) {
 
   if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
 
+  const [lead, measurer] = await Promise.all([
+    prisma.lead.findUnique({ where: { id: parsed.data.leadId }, select: { client: { select: { name: true, phone: true } } } }),
+    prisma.user.findUnique({ where: { id: parsed.data.measurerId }, select: { name: true } }),
+  ]);
+
   const measurement = await prisma.measurement.create({
     data: {
       leadId: parsed.data.leadId,
@@ -46,6 +52,16 @@ export async function createMeasurement(_state: unknown, formData: FormData) {
       statusHistory: { create: { status: "MEASUREMENT_SCHEDULED", note: "Назначен замер", userId: session.userId } },
     },
   });
+
+  if (lead?.client.phone) {
+    sendMeasurementSms(
+      lead.client.phone,
+      lead.client.name,
+      new Date(parsed.data.scheduledAt),
+      parsed.data.address,
+      measurer?.name ?? ""
+    ).catch(() => {});
+  }
 
   sendPushToUser(parsed.data.measurerId, {
     title: "Новый замер",
@@ -107,13 +123,20 @@ export async function rescheduleMeasurement(id: string, scheduledAt: string, add
     data: { scheduledAt: new Date(scheduledAt), ...(address ? { address } : {}) },
   });
 
-  if (session) {
-    const m = await prisma.measurement.findUnique({ where: { id }, select: { leadId: true } });
-    if (m) {
+  const m = await prisma.measurement.findUnique({
+    where: { id },
+    select: { leadId: true, lead: { select: { client: { select: { name: true, phone: true } } } } },
+  });
+
+  if (m) {
+    if (session) {
       await prisma.leadHistory.create({
         data: { leadId: m.leadId, status: "MEASUREMENT_SCHEDULED", note: "Дата замера перенесена", userId: session.userId },
       });
       revalidatePath(`/leads/${m.leadId}`);
+    }
+    if (m.lead.client.phone) {
+      sendRescheduleSms(m.lead.client.phone, m.lead.client.name, "замер", new Date(scheduledAt)).catch(() => {});
     }
   }
 

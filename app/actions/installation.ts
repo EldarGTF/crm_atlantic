@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { sendPushToUser } from "@/lib/push";
 import { logOrderActivity } from "@/lib/activity";
+import { sendInstallationSms, sendRescheduleSms } from "@/lib/sms";
 
 export async function getInstallations() {
   const installations = await prisma.installation.findMany({
@@ -69,7 +70,7 @@ export async function scheduleInstallation(_state: unknown, formData: FormData) 
 
   const order = await prisma.order.findUnique({
     where: { id: orderId },
-    select: { leadId: true, lead: { select: { client: { select: { name: true } } } } },
+    select: { leadId: true, lead: { select: { client: { select: { name: true, phone: true } } } } },
   });
   if (!order) return { message: "Заказ не найден" };
 
@@ -91,6 +92,16 @@ export async function scheduleInstallation(_state: unknown, formData: FormData) 
     await logOrderActivity(orderId, session.userId, `Монтаж назначен — ${installer?.name ?? ""}`);
   }
 
+  if (order.lead.client.phone) {
+    sendInstallationSms(
+      order.lead.client.phone,
+      order.lead.client.name,
+      new Date(scheduledAt),
+      address,
+      installer?.name ?? ""
+    ).catch(() => {});
+  }
+
   sendPushToUser(installerId, {
     title: "Новый монтаж",
     body: `Адрес: ${address}`,
@@ -110,14 +121,22 @@ export async function rescheduleInstallation(id: string, scheduledAt: string) {
     data: { scheduledAt: new Date(scheduledAt) },
   });
 
-  if (session) {
-    const inst = await prisma.installation.findUnique({ where: { id }, select: { orderId: true, order: { select: { leadId: true } } } });
-    if (inst) {
+  const inst = await prisma.installation.findUnique({
+    where: { id },
+    select: { orderId: true, order: { select: { leadId: true, lead: { select: { client: { select: { name: true, phone: true } } } } } } },
+  });
+
+  if (inst) {
+    if (session) {
       await logOrderActivity(inst.orderId, session.userId, "Дата монтажа перенесена");
       await prisma.leadHistory.create({
         data: { leadId: inst.order.leadId, status: "INSTALLATION_SCHEDULED", note: "Дата монтажа перенесена", userId: session.userId },
       });
       revalidatePath(`/leads/${inst.order.leadId}`);
+    }
+    const client = inst.order.lead.client;
+    if (client.phone) {
+      sendRescheduleSms(client.phone, client.name, "монтаж", new Date(scheduledAt)).catch(() => {});
     }
   }
 
