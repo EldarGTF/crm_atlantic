@@ -4,7 +4,7 @@ import { ru } from "date-fns/locale";
 const API_KEY = process.env.MOBIZON_API_KEY;
 const SENDER = process.env.MOBIZON_SENDER; // только если зарегистрировано в Mobizon
 const API_DOMAIN = process.env.MOBIZON_DOMAIN ?? "api.mobizon.kz";
-const BASE_URL = `https://${API_DOMAIN}/service/message/sendSMSMessage`;
+const BASE_URL = `https://${API_DOMAIN}/service/message/sendsmsmessage`;
 
 function normalizePhone(phone: string): string {
   const digits = phone.replace(/\D/g, "");
@@ -19,21 +19,16 @@ async function sendSms(phone: string, text: string): Promise<void> {
     return;
   }
   const recipient = normalizePhone(phone);
-  const body = new URLSearchParams({ recipient, text });
-  if (SENDER) body.set("from", SENDER);
-  const url = `${BASE_URL}?output=json&api=v1&apiKey=${API_KEY}`;
-  console.log(`[SMS] Sending to ${recipient}, url: ${BASE_URL}, body: ${body.toString()}`);
+  const params = new URLSearchParams({ recipient, text, apiKey: API_KEY });
+  if (SENDER) params.set("from", SENDER);
+  const url = `${BASE_URL}?${params.toString()}`;
   try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: body.toString(),
-    });
+    const res = await fetch(url, { method: "GET" });
     const json = await res.json();
     if (json?.code === 0) {
       console.log(`[SMS] Sent to ${recipient}, messageId: ${json?.data?.messageId}`);
     } else {
-      console.error(`[SMS] Error sending to ${recipient}:`, json?.message, json?.code, JSON.stringify(json));
+      console.error(`[SMS] Error sending to ${recipient}:`, json?.message, json?.code);
     }
   } catch (e) {
     console.error(`[SMS] Request failed for ${recipient}:`, e);
