@@ -19,19 +19,21 @@ async function sendSms(phone: string, text: string): Promise<void> {
     return;
   }
   const recipient = normalizePhone(phone);
-  const params = new URLSearchParams({ apiKey: API_KEY, recipient, text });
-  if (SENDER) params.set("from", SENDER);
+  const body = new URLSearchParams({ recipient, text });
+  if (SENDER) body.set("from", SENDER);
+  const url = `${BASE_URL}?output=json&api=v1&apiKey=${API_KEY}`;
+  console.log(`[SMS] Sending to ${recipient}, url: ${BASE_URL}, body: ${body.toString()}`);
   try {
-    const res = await fetch(`${BASE_URL}?output=json&api=v1`, {
+    const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: params.toString(),
+      body: body.toString(),
     });
     const json = await res.json();
     if (json?.code === 0) {
       console.log(`[SMS] Sent to ${recipient}, messageId: ${json?.data?.messageId}`);
     } else {
-      console.error(`[SMS] Error sending to ${recipient}:`, json?.message, json?.code);
+      console.error(`[SMS] Error sending to ${recipient}:`, json?.message, json?.code, JSON.stringify(json));
     }
   } catch (e) {
     console.error(`[SMS] Request failed for ${recipient}:`, e);
