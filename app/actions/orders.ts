@@ -1,12 +1,14 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/session";
+import { requireRole } from "@/lib/access";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { sendPushToRole } from "@/lib/push";
 import { logOrderActivity } from "@/lib/activity";
+import { summarizeOrderFinance } from "@/lib/order-finance";
+import { canSendToProduction } from "@/lib/lead-status-transitions";
 
 const OrderItemSchema = z.object({
   productType: z.string().min(1),
@@ -25,9 +27,10 @@ const ExtraWorkSchema = z.object({
   notes: z.string().optional(),
 });
 
+const ORDER_MUTATION_ROLES = ["ADMIN", "MANAGER", "ECONOMIST"];
+
 export async function createOrder(_state: unknown, formData: FormData) {
-  const session = await getSession();
-  if (!session) redirect("/login");
+  const session = await requireRole(ORDER_MUTATION_ROLES);
 
   const leadId = formData.get("leadId") as string;
   if (!leadId) return { message: "Заявка не указана" };
@@ -102,8 +105,7 @@ export async function createOrder(_state: unknown, formData: FormData) {
 }
 
 export async function addPayment(orderId: string, _state: unknown, formData: FormData) {
-  const session = await getSession();
-  if (!session) redirect("/login");
+  const session = await requireRole(ORDER_MUTATION_ROLES);
 
   const amount = Number(formData.get("amount"));
   const type = formData.get("type") as "PREPAYMENT" | "FINAL" | "OTHER";
@@ -112,11 +114,11 @@ export async function addPayment(orderId: string, _state: unknown, formData: For
   await prisma.payment.create({ data: { orderId, amount, type, notes } });
 
   const payments = await prisma.payment.findMany({ where: { orderId } });
-  const paid = payments.reduce((s, p) => s + Number(p.amount), 0);
+  const paymentAmounts = payments.map((p) => Number(p.amount));
   const order = await prisma.order.findUnique({ where: { id: orderId }, select: { totalAmount: true } });
   const total = Number(order?.totalAmount ?? 0);
 
-  const paymentStatus = paid >= total ? "PAID" : paid > 0 ? "PREPAID" : "UNPAID";
+  const { paid, paymentStatus } = summarizeOrderFinance(total, paymentAmounts);
   await prisma.order.update({
     where: { id: orderId },
     data: { prepaidAmount: paid, paymentStatus },
@@ -133,7 +135,7 @@ export async function signAct(
   leadId: string,
   actFile?: { name: string; url: string; size: number } | null
 ) {
-  const session = await getSession();
+  const session = await requireRole(ORDER_MUTATION_ROLES);
 
   const order = await prisma.order.findUnique({
     where: { id: orderId },
@@ -157,18 +159,18 @@ export async function signAct(
     where: { id: leadId },
     data: {
       status: "ACT_SIGNED",
-      statusHistory: { create: { status: "ACT_SIGNED", note: "Акт выполненных работ подписан", userId: session?.userId ?? null } },
+      statusHistory: { create: { status: "ACT_SIGNED", note: "Акт выполненных работ подписан", userId: session.userId } },
     },
   });
 
-  if (session) await logOrderActivity(orderId, session.userId, "Акт выполненных работ подписан");
+  await logOrderActivity(orderId, session.userId, "Акт выполненных работ подписан");
 
   revalidatePath(`/orders/${orderId}`);
   revalidatePath(`/leads/${leadId}`);
 }
 
 export async function archiveOrder(orderId: string, leadId: string) {
-  const session = await getSession();
+  const session = await requireRole(ORDER_MUTATION_ROLES);
 
   await prisma.order.update({ where: { id: orderId }, data: { archived: true } });
   await prisma.lead.update({
@@ -176,11 +178,11 @@ export async function archiveOrder(orderId: string, leadId: string) {
     data: {
       archived: true,
       status: "CLOSED",
-      statusHistory: { create: { status: "CLOSED", note: "Сделка закрыта", userId: session?.userId ?? null } },
+      statusHistory: { create: { status: "CLOSED", note: "Сделка закрыта", userId: session.userId } },
     },
   });
 
-  if (session) await logOrderActivity(orderId, session.userId, "Сделка закрыта, заказ перемещён в архив");
+  await logOrderActivity(orderId, session.userId, "Сделка закрыта, заказ перемещён в архив");
 
   revalidatePath(`/orders/${orderId}`);
   redirect("/leads");
@@ -195,7 +197,15 @@ export async function sendToProduction(
   files: OrderFileInput[] = []
 ) {
   if (!depts.length) return { message: "Выберите хотя бы один цех" };
-  const session = await getSession();
+  const session = await requireRole(ORDER_MUTATION_ROLES);
+  const lead = await prisma.lead.findUnique({
+    where: { id: leadId },
+    select: { status: true },
+  });
+  if (!lead) return { message: "Заявка не найдена" };
+  if (!canSendToProduction(lead.status)) {
+    return { message: "Заказ уже находится в производственном цикле" };
+  }
 
   const DEPT_NAMES: Record<string, string> = { GLASS: "Стекло", PVC: "ПВХ", ALUMINUM: "Алюминий" };
   const deptLabels = depts.map((d) => DEPT_NAMES[d] ?? d).join(", ");
@@ -215,11 +225,11 @@ export async function sendToProduction(
     where: { id: leadId },
     data: {
       status: "SENT_TO_PRODUCTION",
-      statusHistory: { create: { status: "SENT_TO_PRODUCTION", note: `Отправлен в производство — ${deptLabels}`, userId: session?.userId ?? null } },
+      statusHistory: { create: { status: "SENT_TO_PRODUCTION", note: `Отправлен в производство — ${deptLabels}`, userId: session.userId } },
     },
   });
 
-  if (session) await logOrderActivity(orderId, session.userId, `Отправлен в производство — ${deptLabels}`);
+  await logOrderActivity(orderId, session.userId, `Отправлен в производство — ${deptLabels}`);
 
   const deptRoleMap: Record<string, string> = {
     GLASS: "PRODUCTION_GLASS",

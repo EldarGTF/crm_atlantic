@@ -1,14 +1,14 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/session";
+import { requireRole } from "@/lib/access";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { logOrderActivity } from "@/lib/activity";
 
+const WARRANTY_ROLES = ["ADMIN", "MANAGER", "ECONOMIST"];
+
 export async function createWarrantyClaim(orderId: string, description: string) {
-  const session = await getSession();
-  if (!session) redirect("/login");
+  const session = await requireRole(WARRANTY_ROLES);
   if (!description.trim()) return { message: "Опишите проблему" };
 
   await prisma.warrantyClaim.create({
@@ -25,7 +25,7 @@ export async function updateWarrantyStatus(
   status: "OPEN" | "IN_PROGRESS" | "RESOLVED",
   resolution?: string
 ) {
-  const session = await getSession();
+  const session = await requireRole(WARRANTY_ROLES);
 
   await prisma.warrantyClaim.update({
     where: { id: claimId },
@@ -44,6 +44,7 @@ export async function updateWarrantyStatus(
 }
 
 export async function deleteWarrantyClaim(claimId: string, orderId: string) {
+  await requireRole(WARRANTY_ROLES);
   await prisma.warrantyClaim.delete({ where: { id: claimId } });
   revalidatePath(`/orders/${orderId}`);
   revalidatePath("/warranty");

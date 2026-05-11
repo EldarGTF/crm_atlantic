@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { LinkButton } from "@/components/ui/link-button";
 import { Input } from "@/components/ui/input";
 import { Plus, Search, Phone } from "lucide-react";
-import { LEAD_STATUS_LABELS, LEAD_SOURCE_LABELS, LEAD_STATUSES } from "@/lib/lead-constants";
+import { LEAD_STATUS_LABELS, LEAD_SOURCE_LABELS } from "@/lib/lead-constants";
 import { formatDistanceToNow } from "date-fns";
 import { ru } from "date-fns/locale";
 import { getSession } from "@/lib/session";

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 import { logOrderActivity } from "@/lib/activity";
+import { nextStatusOnDeptDone, nextStatusOnDeptTaken } from "@/lib/lead-status-transitions";
 
 const DEPT_ROLES: Record<string, string> = {
   GLASS: "PRODUCTION_GLASS",
@@ -65,12 +66,13 @@ export async function takeInWorkDept(orderId: string, dept: string) {
 
   const deptLabel = DEPT_NAMES[dept] ?? dept;
 
-  if (lead?.status === "SENT_TO_PRODUCTION") {
+  const nextStatus = nextStatusOnDeptTaken(lead?.status ?? "");
+  if (nextStatus === "IN_PRODUCTION") {
     await prisma.lead.update({
       where: { id: order.leadId },
       data: {
-        status: "IN_PRODUCTION",
-        statusHistory: { create: { status: "IN_PRODUCTION", note: `Взят в производство — цех ${deptLabel}`, userId: session?.userId ?? null } },
+        status: nextStatus,
+        statusHistory: { create: { status: nextStatus, note: `Взят в производство — цех ${deptLabel}`, userId: session?.userId ?? null } },
       },
     });
     revalidatePath(`/leads/${order.leadId}`);
@@ -104,13 +106,18 @@ export async function markDeptDone(orderId: string, dept: string) {
 
   const deptLabel = DEPT_NAMES[dept] ?? dept;
   const allDone = order.productionDepts.every((d) => d.doneAt !== null || d.dept === dept);
+  const lead = await prisma.lead.findUnique({
+    where: { id: order.leadId },
+    select: { status: true },
+  });
+  const nextStatus = nextStatusOnDeptDone(lead?.status ?? "", allDone);
 
-  if (allDone) {
+  if (nextStatus === "READY_FOR_INSTALLATION") {
     await prisma.lead.update({
       where: { id: order.leadId },
       data: {
-        status: "READY_FOR_INSTALLATION",
-        statusHistory: { create: { status: "READY_FOR_INSTALLATION", note: "Производство завершено, готов к монтажу", userId: session?.userId ?? null } },
+        status: nextStatus,
+        statusHistory: { create: { status: nextStatus, note: "Производство завершено, готов к монтажу", userId: session?.userId ?? null } },
       },
     });
     if (session) await logOrderActivity(orderId, session.userId, "Производство завершено, заказ готов к монтажу");

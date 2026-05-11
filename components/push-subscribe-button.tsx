@@ -6,14 +6,17 @@ import { Bell, BellOff } from "lucide-react";
 type Status = "loading" | "subscribed" | "unsubscribed" | "unsupported";
 
 export function PushSubscribeButton() {
-  const [status, setStatus] = useState<Status>("loading");
+  const [status, setStatus] = useState<Status>(() => {
+    if (typeof window === "undefined") return "loading";
+    if (!("serviceWorker" in window.navigator) || !("PushManager" in window)) {
+      return "unsupported";
+    }
+    return "loading";
+  });
   const [pending, setPending] = useState(false);
 
   useEffect(() => {
-    if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
-      setStatus("unsupported");
-      return;
-    }
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
     navigator.serviceWorker
       .register("/sw.js")
       .then((reg) => reg.pushManager.getSubscription())

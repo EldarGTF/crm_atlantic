@@ -1,12 +1,14 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/session";
+import { requireRole } from "@/lib/access";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { sendPushToUser } from "@/lib/push";
 import { logOrderActivity } from "@/lib/activity";
 import { sendInstallationSms, sendRescheduleSms } from "@/lib/sms";
+
+const INSTALLATION_ROLES = ["ADMIN", "MANAGER", "ECONOMIST", "INSTALLER"];
 
 export async function getInstallations() {
   const installations = await prisma.installation.findMany({
@@ -57,7 +59,7 @@ export async function getOrdersReadyForInstallation() {
 }
 
 export async function scheduleInstallation(_state: unknown, formData: FormData) {
-  const session = await getSession();
+  const session = await requireRole(INSTALLATION_ROLES);
   const orderId = formData.get("orderId") as string;
   const installerId = formData.get("installerId") as string;
   const scheduledAt = formData.get("scheduledAt") as string;
@@ -84,13 +86,11 @@ export async function scheduleInstallation(_state: unknown, formData: FormData) 
     where: { id: order.leadId },
     data: {
       status: "INSTALLATION_SCHEDULED",
-      statusHistory: { create: { status: "INSTALLATION_SCHEDULED", note: `Монтаж назначен — ${installer?.name ?? ""}`, userId: session?.userId ?? null } },
+      statusHistory: { create: { status: "INSTALLATION_SCHEDULED", note: `Монтаж назначен — ${installer?.name ?? ""}`, userId: session.userId } },
     },
   });
 
-  if (session) {
-    await logOrderActivity(orderId, session.userId, `Монтаж назначен — ${installer?.name ?? ""}`);
-  }
+  await logOrderActivity(orderId, session.userId, `Монтаж назначен — ${installer?.name ?? ""}`);
 
   if (order.lead.client.phone) {
     sendInstallationSms(
@@ -114,7 +114,7 @@ export async function scheduleInstallation(_state: unknown, formData: FormData) 
 }
 
 export async function rescheduleInstallation(id: string, scheduledAt: string) {
-  const session = await getSession();
+  const session = await requireRole(INSTALLATION_ROLES);
 
   await prisma.installation.update({
     where: { id },
@@ -127,13 +127,11 @@ export async function rescheduleInstallation(id: string, scheduledAt: string) {
   });
 
   if (inst) {
-    if (session) {
-      await logOrderActivity(inst.orderId, session.userId, "Дата монтажа перенесена");
-      await prisma.leadHistory.create({
-        data: { leadId: inst.order.leadId, status: "INSTALLATION_SCHEDULED", note: "Дата монтажа перенесена", userId: session.userId },
-      });
-      revalidatePath(`/leads/${inst.order.leadId}`);
-    }
+    await logOrderActivity(inst.orderId, session.userId, "Дата монтажа перенесена");
+    await prisma.leadHistory.create({
+      data: { leadId: inst.order.leadId, status: "INSTALLATION_SCHEDULED", note: "Дата монтажа перенесена", userId: session.userId },
+    });
+    revalidatePath(`/leads/${inst.order.leadId}`);
     const client = inst.order.lead.client;
     if (client.phone) {
       sendRescheduleSms(client.phone, client.name, "монтаж", new Date(scheduledAt)).catch(() => {});
@@ -144,32 +142,30 @@ export async function rescheduleInstallation(id: string, scheduledAt: string) {
 }
 
 export async function takeInstallationInWork(installationId: string) {
-  const session = await getSession();
+  const session = await requireRole(INSTALLATION_ROLES);
 
   await prisma.installation.update({
     where: { id: installationId },
     data: { inWorkAt: new Date() },
   });
 
-  if (session) {
-    const inst = await prisma.installation.findUnique({
-      where: { id: installationId },
-      select: { orderId: true, order: { select: { leadId: true } } },
+  const inst = await prisma.installation.findUnique({
+    where: { id: installationId },
+    select: { orderId: true, order: { select: { leadId: true } } },
+  });
+  if (inst) {
+    await logOrderActivity(inst.orderId, session.userId, "Монтаж взят в работу");
+    await prisma.leadHistory.create({
+      data: { leadId: inst.order.leadId, status: "INSTALLATION_SCHEDULED", note: "Монтаж взят в работу", userId: session.userId },
     });
-    if (inst) {
-      await logOrderActivity(inst.orderId, session.userId, "Монтаж взят в работу");
-      await prisma.leadHistory.create({
-        data: { leadId: inst.order.leadId, status: "INSTALLATION_SCHEDULED", note: "Монтаж взят в работу", userId: session.userId },
-      });
-      revalidatePath(`/leads/${inst.order.leadId}`);
-    }
+    revalidatePath(`/leads/${inst.order.leadId}`);
   }
 
   revalidatePath("/installation");
 }
 
 export async function markInstallationDone(installationId: string, orderId: string, leadId: string) {
-  const session = await getSession();
+  const session = await requireRole(INSTALLATION_ROLES);
 
   await prisma.installation.update({
     where: { id: installationId },
@@ -180,13 +176,11 @@ export async function markInstallationDone(installationId: string, orderId: stri
     where: { id: leadId },
     data: {
       status: "INSTALLED",
-      statusHistory: { create: { status: "INSTALLED", note: "Монтаж выполнен", userId: session?.userId ?? null } },
+      statusHistory: { create: { status: "INSTALLED", note: "Монтаж выполнен", userId: session.userId } },
     },
   });
 
-  if (session) {
-    await logOrderActivity(orderId, session.userId, "Монтаж выполнен");
-  }
+  await logOrderActivity(orderId, session.userId, "Монтаж выполнен");
 
   revalidatePath("/installation");
   revalidatePath(`/orders/${orderId}`);

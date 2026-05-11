@@ -7,8 +7,8 @@ import { CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 
 export function MarkDoneButton({ measurementId, leadId, role }: { measurementId: string; leadId: string; role: string }) {
-  if (role !== "ADMIN" && role !== "MEASURER") return null;
   const [isPending, startTransition] = useTransition();
+  if (role !== "ADMIN" && role !== "MEASURER") return null;
 
   return (
     <Button

@@ -12,6 +12,12 @@ if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
 
 type Payload = { title: string; body: string; url?: string };
 
+function isExpiredSubscriptionError(error: unknown) {
+  if (typeof error !== "object" || error === null) return false;
+  const maybeStatus = (error as { statusCode?: unknown }).statusCode;
+  return maybeStatus === 404 || maybeStatus === 410;
+}
+
 export async function sendPushToUser(userId: string, payload: Payload) {
   if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) return;
   const subs = await prisma.pushSubscription.findMany({ where: { userId } });
@@ -22,8 +28,8 @@ export async function sendPushToUser(userId: string, payload: Payload) {
           { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
           JSON.stringify(payload)
         );
-      } catch (err: any) {
-        if (err.statusCode === 410 || err.statusCode === 404) {
+      } catch (err: unknown) {
+        if (isExpiredSubscriptionError(err)) {
           await prisma.pushSubscription.delete({ where: { id: sub.id } });
         }
       }

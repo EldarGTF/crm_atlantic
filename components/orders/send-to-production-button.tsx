@@ -3,13 +3,9 @@
 import { useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { sendToProduction } from "@/app/actions/orders";
+import { canSendToProduction } from "@/lib/lead-status-transitions";
 import { Wrench, Upload, Camera, CheckCircle, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
-
-const PRODUCTION_STATUSES = new Set([
-  "SENT_TO_PRODUCTION", "IN_PRODUCTION", "READY_FOR_INSTALLATION",
-  "INSTALLATION_SCHEDULED", "INSTALLED", "ACT_SIGNED", "CLOSED", "CANCELLED",
-]);
 
 const DEPTS = [
   { value: "GLASS",    label: "Стекло",    fileType: "WORK_ORDER_GLASS" },
@@ -97,7 +93,7 @@ export function SendToProductionButton({ orderId, leadId, leadStatus }: Props) {
   const [selected, setSelected] = useState<string[]>(["GLASS", "PVC", "ALUMINUM"]);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
 
-  if (PRODUCTION_STATUSES.has(leadStatus)) return null;
+  if (!canSendToProduction(leadStatus)) return null;
 
   function toggle(dept: string) {
     setSelected((prev) =>

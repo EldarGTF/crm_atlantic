@@ -7,8 +7,8 @@ import { PlayCircle } from "lucide-react";
 import { toast } from "sonner";
 
 export function TakeInWorkButton({ measurementId, role }: { measurementId: string; role: string }) {
-  if (role !== "ADMIN" && role !== "MEASURER") return null;
   const [isPending, startTransition] = useTransition();
+  if (role !== "ADMIN" && role !== "MEASURER") return null;
 
   return (
     <Button

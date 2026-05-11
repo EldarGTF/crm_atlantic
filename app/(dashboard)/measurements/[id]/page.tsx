@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getMeasurement, markMeasurementDone, addMeasurementFile, deleteMeasurementFile } from "@/app/actions/measurements";
+import { getMeasurement, addMeasurementFile, deleteMeasurementFile } from "@/app/actions/measurements";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { FileUploader } from "@/components/file-uploader";
 import { ChevronLeft, Calendar, MapPin, User, FileText } from "lucide-react";
 import { format } from "date-fns";
@@ -21,7 +20,6 @@ export default async function MeasurementPage({ params }: Props) {
   const role = session?.role ?? "MANAGER";
 
   const addFile = addMeasurementFile.bind(null, id);
-  const deleteFile = deleteMeasurementFile.bind(null, ...["" as string, id] as [string, string]);
 
   return (
     <div className="space-y-5 max-w-2xl">

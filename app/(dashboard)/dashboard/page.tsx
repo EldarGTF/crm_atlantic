@@ -106,7 +106,7 @@ export default async function DashboardPage() {
             <span className="text-xs text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full font-medium">{pipelineTotal} активных</span>
           </div>
           <div className="space-y-3">
-            {PIPELINE_STAGES.map(({ key, label }) => {
+            {PIPELINE_STAGES.map(({ key }) => {
               const count = stats.pipeline[key] ?? 0;
               if (count === 0) return null;
               const pct = Math.round((count / maxPipeline) * 100);

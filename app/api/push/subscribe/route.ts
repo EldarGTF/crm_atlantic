@@ -21,7 +21,10 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const session = await getSession();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   const { endpoint } = await req.json();
-  await prisma.pushSubscription.deleteMany({ where: { endpoint } });
+  await prisma.pushSubscription.deleteMany({ where: { endpoint, userId: session.userId } });
   return NextResponse.json({ ok: true });
 }
