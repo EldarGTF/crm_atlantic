@@ -67,6 +67,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     path: data.path,
     token: data.token,
+    signedUrl: data.signedUrl,
     publicUrl: publicData.publicUrl,
     contentType: built.mime,
     name: fileName,

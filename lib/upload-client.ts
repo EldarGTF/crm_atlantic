@@ -5,11 +5,6 @@ export async function uploadFileToStorage(
   file: File,
   folder: string
 ): Promise<{ name: string; url: string; size: number }> {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  if (!supabaseUrl) {
-    throw new Error("Supabase URL не настроен");
-  }
-
   const signRes = await fetch("/api/upload/sign", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -26,21 +21,33 @@ export async function uploadFileToStorage(
     throw new Error(signData.error ?? "Не удалось подготовить загрузку");
   }
 
-  const uploadUrl = `${supabaseUrl}/storage/v1/object/upload/sign/${signData.path}?token=${encodeURIComponent(signData.token)}`;
+  if (!signData.signedUrl) {
+    throw new Error("Некорректный ответ сервера загрузки");
+  }
 
-  const putRes = await fetch(uploadUrl, {
+  // Supabase signed upload ожидает multipart FormData (как в @supabase/storage-js)
+  const body = new FormData();
+  body.append("cacheControl", "3600");
+  body.append("", file);
+
+  const putRes = await fetch(signData.signedUrl, {
     method: "PUT",
     headers: {
-      "Content-Type": signData.contentType || file.type || "application/octet-stream",
-      "cache-control": "3600",
       "x-upsert": "false",
     },
-    body: file,
+    body,
   });
 
   if (!putRes.ok) {
-    const errText = await putRes.text().catch(() => "");
-    throw new Error(errText || `Ошибка загрузки (${putRes.status})`);
+    let message = `Ошибка загрузки (${putRes.status})`;
+    try {
+      const errJson = await putRes.json();
+      message = errJson.message ?? errJson.error ?? message;
+    } catch {
+      const errText = await putRes.text().catch(() => "");
+      if (errText) message = errText;
+    }
+    throw new Error(message);
   }
 
   return {
