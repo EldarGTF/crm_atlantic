@@ -131,9 +131,15 @@ docker compose exec minio mc mirror local/crm-files /backup/files
 ```text
 Интернет → Nginx (:80/443)
             ├─ /        → Next.js (app:3000)
-            └─ /files/  → MinIO (bucket crm-files)
+            ├─ /files/  → MinIO (GET, просмотр)
+            └─ /s3/     → MinIO (PUT, загрузка из браузера)
 PostgreSQL — только внутри Docker-сети
 ```
+
+В `.env` обязательно:
+
+- `S3_PUBLIC_URL=http://ВАШ_IP/files`
+- `S3_SIGN_ENDPOINT=http://ВАШ_IP/s3`
 
 ## Отличие от Vercel + Supabase
 
@@ -146,7 +152,7 @@ PostgreSQL — только внутри Docker-сети
 
 ## Проблемы
 
-**Не грузятся фото** — проверьте `S3_PUBLIC_URL` (должен совпадать с тем, как nginx отдаёт `/files/`).
+**Не грузятся фото / Failed to fetch** — в `.env` задайте `S3_SIGN_ENDPOINT=http://IP/s3` и `S3_PUBLIC_URL=http://IP/files`, пересоберите app и перезапустите nginx (`docker compose up -d`).
 
 **502 от nginx** — `docker compose logs app` — часто нет `SESSION_SECRET` или БД не поднялась.
 

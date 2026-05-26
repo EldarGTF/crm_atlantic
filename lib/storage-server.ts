@@ -23,14 +23,30 @@ function useS3Storage(): boolean {
   );
 }
 
+function s3Credentials() {
+  return {
+    accessKeyId: process.env.S3_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!,
+  };
+}
+
+/** Внутренний MinIO (только Docker-сеть). */
 function getS3Client() {
   return new S3Client({
     endpoint: process.env.S3_ENDPOINT,
     region: process.env.S3_REGION ?? "us-east-1",
-    credentials: {
-      accessKeyId: process.env.S3_ACCESS_KEY_ID!,
-      secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!,
-    },
+    credentials: s3Credentials(),
+    forcePathStyle: true,
+  });
+}
+
+/** Публичный URL для подписи PUT — браузер не видит minio:9000. */
+function getS3PresignClient() {
+  const endpoint = process.env.S3_SIGN_ENDPOINT ?? process.env.S3_ENDPOINT;
+  return new S3Client({
+    endpoint,
+    region: process.env.S3_REGION ?? "us-east-1",
+    credentials: s3Credentials(),
     forcePathStyle: true,
   });
 }
@@ -43,7 +59,7 @@ export async function createUploadSignature(
 
   if (useS3Storage()) {
     try {
-      const client = getS3Client();
+      const client = getS3PresignClient();
       const command = new PutObjectCommand({
         Bucket: bucket,
         Key: path,

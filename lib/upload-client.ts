@@ -28,13 +28,19 @@ export async function uploadFileToStorage(
   let putRes: Response;
 
   if (signData.provider === "s3") {
-    putRes = await fetch(signData.signedUrl, {
-      method: "PUT",
-      headers: {
-        "Content-Type": signData.contentType || file.type || "application/octet-stream",
-      },
-      body: file,
-    });
+    try {
+      putRes = await fetch(signData.signedUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": signData.contentType || file.type || "application/octet-stream",
+        },
+        body: file,
+      });
+    } catch {
+      throw new Error(
+        "Не удалось отправить файл на сервер. Проверьте S3_SIGN_ENDPOINT в .env (http://IP/s3)."
+      );
+    }
   } else {
     const body = new FormData();
     body.append("cacheControl", "3600");

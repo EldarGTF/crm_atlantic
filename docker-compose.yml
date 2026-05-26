@@ -60,6 +60,7 @@ services:
       S3_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
       S3_BUCKET: crm-files
       S3_PUBLIC_URL: ${S3_PUBLIC_URL:-http://localhost/files}
+      S3_SIGN_ENDPOINT: ${S3_SIGN_ENDPOINT:-http://localhost/s3}
       MOBIZON_API_KEY: ${MOBIZON_API_KEY:-}
       MOBIZON_SENDER: ${MOBIZON_SENDER:-}
       MOBIZON_DOMAIN: ${MOBIZON_DOMAIN:-api.mobizon.kz}
