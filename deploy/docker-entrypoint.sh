@@ -3,7 +3,9 @@ set -e
 
 if [ -n "$DATABASE_URL" ]; then
   echo "Applying database schema..."
-  npx prisma db push --skip-generate 2>/dev/null || npx prisma migrate deploy 2>/dev/null || true
+  if ! npx prisma db push; then
+    echo "WARN: prisma db push failed — check DATABASE_URL and postgres container"
+  fi
 fi
 
 exec node server.js

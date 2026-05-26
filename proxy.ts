@@ -36,25 +36,35 @@ export async function proxy(request: NextRequest) {
 
   const isPublic = PUBLIC_ROUTES.some((r) => pathname.startsWith(r));
   const token = request.cookies.get("crm_session")?.value;
-  const session = token ? await decrypt(token) : null;
 
-  if (!session && !isPublic) {
-    return NextResponse.redirect(new URL("/login", request.url));
+  // Нет cookie — на защищённые маршруты только логин
+  if (!token) {
+    if (!isPublic) {
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+    return NextResponse.next();
   }
 
-  if (session && isPublic) {
+  const session = await decrypt(token);
+
+  // Cookie есть, но JWT не расшифровался (на VPS часто SECRET недоступен в proxy).
+  // Не выкидываем на логин — layout/requireSession проверят сессию в Node.
+  if (!session) {
+    return NextResponse.next();
+  }
+
+  if (isPublic) {
     const home = HOME_BY_ROLE[session.role] ?? "/dashboard";
     return NextResponse.redirect(new URL(home, request.url));
   }
 
-  if (session) {
-    const matchedRoute = Object.keys(ROUTE_ROLES).find(
-      (route) => pathname === route || pathname.startsWith(route + "/")
-    );
-    if (matchedRoute && !ROUTE_ROLES[matchedRoute].includes(session.role)) {
-      const home = HOME_BY_ROLE[session.role] ?? "/dashboard";
-      return NextResponse.redirect(new URL(home, request.url));
-    }
+  const matchedRoute = Object.keys(ROUTE_ROLES)
+    .sort((a, b) => b.length - a.length)
+    .find((route) => pathname === route || pathname.startsWith(route + "/"));
+
+  if (matchedRoute && !ROUTE_ROLES[matchedRoute].includes(session.role)) {
+    const home = HOME_BY_ROLE[session.role] ?? "/dashboard";
+    return NextResponse.redirect(new URL(home, request.url));
   }
 
   return NextResponse.next();

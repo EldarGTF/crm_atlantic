@@ -55,6 +55,7 @@ function NavItem({
   return (
     <Link
       href={href}
+      prefetch={false}
       onClick={onClick}
       className={cn(
         "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-100",

@@ -22,6 +22,11 @@ function getEncodedSecret(): Uint8Array {
 const COOKIE_NAME = "crm_session";
 const SESSION_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 дней
 
+/** Secure только при COOKIE_SECURE=true (нужно для HTTPS). По HTTP/IP — не включать. */
+function isSecureCookie(): boolean {
+  return process.env.COOKIE_SECURE === "true";
+}
+
 export async function encrypt(payload: SessionPayload) {
   return new SignJWT({ ...payload })
     .setProtectedHeader({ alg: "HS256" })
@@ -48,7 +53,7 @@ export async function createSession(payload: Omit<SessionPayload, "expiresAt">) 
 
   cookieStore.set(COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: isSecureCookie(),
     sameSite: "lax",
     expires: expiresAt,
     path: "/",
@@ -57,7 +62,11 @@ export async function createSession(payload: Omit<SessionPayload, "expiresAt">) 
 
 export async function deleteSession() {
   const cookieStore = await cookies();
-  cookieStore.delete(COOKIE_NAME);
+  cookieStore.delete({
+    name: COOKIE_NAME,
+    path: "/",
+    secure: isSecureCookie(),
+  });
 }
 
 export async function getSession(): Promise<SessionPayload | null> {

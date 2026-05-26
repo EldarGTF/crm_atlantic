@@ -52,6 +52,7 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-crm}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-crm_atlantic}
       SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
       NODE_ENV: production
       S3_ENDPOINT: http://minio:9000
       S3_REGION: us-east-1

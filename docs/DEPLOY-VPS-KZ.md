@@ -43,6 +43,7 @@ nano .env
 
 - `POSTGRES_PASSWORD`, `MINIO_ROOT_PASSWORD`, `SESSION_SECRET` (≥ 32 символов)
 - `S3_PUBLIC_URL=https://ваш-домен.kz/files` — как пользователи открывают файлы
+- `COOKIE_SECURE=false` — пока сайт только по **http://** (без HTTPS)
 
 ## 4. DNS
 
@@ -63,8 +64,23 @@ docker compose ps
 ## 6. Первый администратор
 
 ```bash
-# в .env задайте ADMIN_PASSWORD, затем:
-docker compose run --rm --entrypoint npx app tsx scripts/create-admin.ts
+# в .env задайте ADMIN_EMAIL и ADMIN_PASSWORD (≥ 8 символов), затем:
+docker compose run --rm \
+  -e ADMIN_EMAIL=admin@atlantic.kz \
+  -e ADMIN_PASSWORD=ваш_пароль \
+  --entrypoint npx \
+  app tsx scripts/create-admin.ts
+```
+
+Если в образе ещё нет `scripts/` (старый build), смонтируйте с хоста:
+
+```bash
+docker compose run --rm \
+  -v "$(pwd)/scripts:/app/scripts:ro" \
+  -e ADMIN_EMAIL=admin@atlantic.kz \
+  -e ADMIN_PASSWORD=ваш_пароль \
+  --entrypoint npx \
+  app tsx scripts/create-admin.ts
 ```
 
 ## 7. HTTPS (Let's Encrypt)
