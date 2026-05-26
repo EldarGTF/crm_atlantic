@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Bell, BellOff } from "lucide-react";
 
 type Status = "loading" | "subscribed" | "unsubscribed" | "unsupported";
@@ -10,15 +10,30 @@ export function PushSubscribeButton() {
   const [pending, setPending] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
-      setStatus("unsupported");
-      return;
+      queueMicrotask(() => {
+        if (!cancelled) setStatus("unsupported");
+      });
+      return () => {
+        cancelled = true;
+      };
     }
+
     navigator.serviceWorker
       .register("/sw.js")
       .then((reg) => reg.pushManager.getSubscription())
-      .then((sub) => setStatus(sub ? "subscribed" : "unsubscribed"))
-      .catch(() => setStatus("unsupported"));
+      .then((sub) => {
+        if (!cancelled) setStatus(sub ? "subscribed" : "unsubscribed");
+      })
+      .catch(() => {
+        if (!cancelled) setStatus("unsupported");
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   async function toggle() {

@@ -1,7 +1,8 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/session";
+import { requireRole } from "@/lib/auth-guards";
+import { MEASUREMENTS } from "@/lib/permissions";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -17,8 +18,7 @@ const MeasurementSchema = z.object({
 });
 
 export async function createMeasurement(_state: unknown, formData: FormData) {
-  const session = await getSession();
-  if (!session) redirect("/login");
+  const session = await requireRole(MEASUREMENTS);
 
   const parsed = MeasurementSchema.safeParse({
     leadId: formData.get("leadId"),
@@ -73,22 +73,32 @@ export async function createMeasurement(_state: unknown, formData: FormData) {
   redirect(`/measurements/${measurement.id}`);
 }
 
+async function assertMeasurementAccess(measurementId: string, session: { userId: string; role: string }) {
+  const m = await prisma.measurement.findUnique({
+    where: { id: measurementId },
+    select: { measurerId: true },
+  });
+  if (!m) redirect("/measurements");
+  if (session.role === "MEASURER" && m.measurerId !== session.userId) {
+    redirect("/measurements");
+  }
+}
+
 export async function takeMeasurementInWork(id: string) {
-  const session = await getSession();
+  const session = await requireRole(MEASUREMENTS);
+  await assertMeasurementAccess(id, session);
 
   await prisma.measurement.update({
     where: { id },
     data: { inWorkAt: new Date() },
   });
 
-  if (session) {
-    const m = await prisma.measurement.findUnique({ where: { id }, select: { leadId: true } });
-    if (m) {
-      await prisma.leadHistory.create({
-        data: { leadId: m.leadId, status: "MEASUREMENT_SCHEDULED", note: "Замер взят в работу", userId: session.userId },
-      });
-      revalidatePath(`/leads/${m.leadId}`);
-    }
+  const m = await prisma.measurement.findUnique({ where: { id }, select: { leadId: true } });
+  if (m) {
+    await prisma.leadHistory.create({
+      data: { leadId: m.leadId, status: "MEASUREMENT_SCHEDULED", note: "Замер взят в работу", userId: session.userId },
+    });
+    revalidatePath(`/leads/${m.leadId}`);
   }
 
   revalidatePath(`/measurements/${id}`);
@@ -96,7 +106,8 @@ export async function takeMeasurementInWork(id: string) {
 }
 
 export async function markMeasurementDone(id: string, leadId: string) {
-  const session = await getSession();
+  const session = await requireRole(MEASUREMENTS);
+  await assertMeasurementAccess(id, session);
 
   await prisma.measurement.update({
     where: { id },
@@ -107,7 +118,7 @@ export async function markMeasurementDone(id: string, leadId: string) {
     where: { id: leadId },
     data: {
       status: "MEASUREMENT_DONE",
-      statusHistory: { create: { status: "MEASUREMENT_DONE", note: "Замер выполнен", userId: session?.userId ?? null } },
+      statusHistory: { create: { status: "MEASUREMENT_DONE", note: "Замер выполнен", userId: session.userId } },
     },
   });
 
@@ -116,7 +127,8 @@ export async function markMeasurementDone(id: string, leadId: string) {
 }
 
 export async function rescheduleMeasurement(id: string, scheduledAt: string, address?: string) {
-  const session = await getSession();
+  const session = await requireRole(MEASUREMENTS);
+  await assertMeasurementAccess(id, session);
 
   await prisma.measurement.update({
     where: { id },
@@ -129,12 +141,10 @@ export async function rescheduleMeasurement(id: string, scheduledAt: string, add
   });
 
   if (m) {
-    if (session) {
-      await prisma.leadHistory.create({
-        data: { leadId: m.leadId, status: "MEASUREMENT_SCHEDULED", note: "Дата замера перенесена", userId: session.userId },
-      });
-      revalidatePath(`/leads/${m.leadId}`);
-    }
+    await prisma.leadHistory.create({
+      data: { leadId: m.leadId, status: "MEASUREMENT_SCHEDULED", note: "Дата замера перенесена", userId: session.userId },
+    });
+    revalidatePath(`/leads/${m.leadId}`);
     if (m.lead.client.phone) {
       sendRescheduleSms(m.lead.client.phone, m.lead.client.name, "замер", new Date(scheduledAt)).catch(() => {});
     }
@@ -148,6 +158,9 @@ export async function addMeasurementFile(
   measurementId: string,
   file: { name: string; url: string; size: number }
 ) {
+  const session = await requireRole(MEASUREMENTS);
+  await assertMeasurementAccess(measurementId, session);
+
   await prisma.measurementFile.create({
     data: { measurementId, name: file.name, url: file.url, size: file.size },
   });
@@ -155,11 +168,15 @@ export async function addMeasurementFile(
 }
 
 export async function deleteMeasurementFile(fileId: string, measurementId: string) {
+  const session = await requireRole(MEASUREMENTS);
+  await assertMeasurementAccess(measurementId, session);
+
   await prisma.measurementFile.delete({ where: { id: fileId } });
   revalidatePath(`/measurements/${measurementId}`);
 }
 
 export async function getMeasurement(id: string) {
+  await requireRole(MEASUREMENTS);
   return prisma.measurement.findUnique({
     where: { id },
     include: {
@@ -171,6 +188,7 @@ export async function getMeasurement(id: string) {
 }
 
 export async function getMeasurers() {
+  await requireRole(MEASUREMENTS);
   return prisma.user.findMany({
     where: { active: true, role: { in: ["ADMIN", "MEASURER", "MANAGER"] } },
     select: { id: true, name: true },
@@ -179,8 +197,12 @@ export async function getMeasurers() {
 }
 
 export async function getMeasurements() {
+  const session = await requireRole(MEASUREMENTS);
   return prisma.measurement.findMany({
-    where: { lead: { archived: false } },
+    where: {
+      lead: { archived: false },
+      ...(session.role === "MEASURER" ? { measurerId: session.userId } : {}),
+    },
     include: {
       measurer: { select: { name: true } },
       lead: { include: { client: { select: { name: true, phone: true } } } },

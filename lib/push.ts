@@ -22,8 +22,9 @@ export async function sendPushToUser(userId: string, payload: Payload) {
           { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
           JSON.stringify(payload)
         );
-      } catch (err: any) {
-        if (err.statusCode === 410 || err.statusCode === 404) {
+      } catch (err: unknown) {
+        const code = err && typeof err === "object" && "statusCode" in err ? (err as { statusCode: number }).statusCode : 0;
+        if (code === 410 || code === 404) {
           await prisma.pushSubscription.delete({ where: { id: sub.id } });
         }
       }

@@ -1,12 +1,11 @@
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/session";
+import { getAuthorizedSession } from "@/lib/auth-guards";
+import { MANAGEMENT } from "@/lib/permissions";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
-  const session = await getSession();
-  if (!session || !["ADMIN", "MANAGER", "ECONOMIST"].includes(session.role)) {
-    return new NextResponse("Forbidden", { status: 403 });
-  }
+  const auth = await getAuthorizedSession(MANAGEMENT);
+  if (!auth) return new NextResponse("Forbidden", { status: 403 });
 
   const { searchParams } = req.nextUrl;
   const q = searchParams.get("q") || undefined;
@@ -17,12 +16,14 @@ export async function GET(req: NextRequest) {
     where: {
       archived,
       ...(payment ? { paymentStatus: payment as "UNPAID" | "PREPAID" | "PAID" } : {}),
-      ...(q ? {
-        OR: [
-          { lead: { client: { name: { contains: q, mode: "insensitive" } } } },
-          { lead: { client: { phone: { contains: q } } } },
-        ],
-      } : {}),
+      ...(q
+        ? {
+            OR: [
+              { lead: { client: { name: { contains: q, mode: "insensitive" } } } },
+              { lead: { client: { phone: { contains: q } } } },
+            ],
+          }
+        : {}),
     },
     include: {
       lead: { include: { client: { select: { name: true, phone: true } } } },
@@ -61,16 +62,18 @@ export async function GET(req: NextRequest) {
 
   const csv = rows
     .map((row) =>
-      row.map((cell) => {
-        const s = String(cell);
-        return s.includes(",") || s.includes('"') || s.includes("\n")
-          ? `"${s.replace(/"/g, '""')}"`
-          : s;
-      }).join(",")
+      row
+        .map((cell) => {
+          const s = String(cell);
+          return s.includes(",") || s.includes('"') || s.includes("\n")
+            ? `"${s.replace(/"/g, '""')}"`
+            : s;
+        })
+        .join(",")
     )
     .join("\n");
 
-  const bom = "﻿";
+  const bom = "\uFEFF";
   return new NextResponse(bom + csv, {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",

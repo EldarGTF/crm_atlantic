@@ -1,13 +1,12 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/session";
+import { requireRole } from "@/lib/auth-guards";
+import { TODAY } from "@/lib/permissions";
 import { startOfDay, endOfDay } from "date-fns";
-import { redirect } from "next/navigation";
 
 export async function getTodayData() {
-  const session = await getSession();
-  if (!session) redirect("/login");
+  const session = await requireRole(TODAY);
 
   const { userId, role } = session;
   const now = new Date();

@@ -3,7 +3,7 @@ import { TaskCard } from "@/components/tasks/task-card";
 import { format, isPast, isToday } from "date-fns";
 import { ru } from "date-fns/locale";
 import Link from "next/link";
-import { Calendar, Phone, MapPin, User, CheckCircle, Clock, AlertCircle, Ruler, HardHat, CheckSquare } from "lucide-react";
+import { Phone, MapPin, User, CheckCircle, Clock, AlertCircle, Ruler, HardHat, CheckSquare } from "lucide-react";
 
 function EmptySection({ label }: { label: string }) {
   return <p className="text-sm text-slate-400 py-4 text-center">{label}</p>;

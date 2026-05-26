@@ -2,7 +2,7 @@ import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 
 const API_KEY = process.env.MOBIZON_API_KEY;
-const SENDER = process.env.MOBIZON_SENDER; // только если зарегистрировано в Mobizon
+const SENDER = process.env.MOBIZON_SENDER;
 const API_DOMAIN = process.env.MOBIZON_DOMAIN ?? "api.mobizon.kz";
 const BASE_URL = `https://${API_DOMAIN}/service/message/sendsmsmessage`;
 
@@ -14,30 +14,31 @@ function normalizePhone(phone: string): string {
 }
 
 async function sendSms(phone: string, text: string): Promise<void> {
-  if (!API_KEY) {
-    console.warn("[SMS] MOBIZON_API_KEY not set, skipping");
-    return;
-  }
+  if (!API_KEY) return;
+
   const recipient = normalizePhone(phone);
-  const body = new URLSearchParams({ recipient, text });
+  const body = new URLSearchParams({ recipient, text, apiKey: API_KEY });
   if (SENDER) body.set("from", SENDER);
-  const url = `${BASE_URL}?output=json&api=v1&apiKey=${encodeURIComponent(API_KEY)}`;
+
   try {
-    const res = await fetch(url, {
+    const res = await fetch(`${BASE_URL}?output=json&api=v1`, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: body.toString(),
     });
     const raw = await res.text();
-    console.log(`[SMS] Raw response for ${recipient}:`, raw);
-    const json = JSON.parse(raw);
-    if (json?.code === 0) {
-      console.log(`[SMS] Sent to ${recipient}, messageId: ${json?.data?.messageId}`);
-    } else {
-      console.error(`[SMS] Error for ${recipient}: code=${json?.code} msg=${json?.message}`);
+    let json: { code?: number; message?: string };
+    try {
+      json = JSON.parse(raw) as { code?: number; message?: string };
+    } catch {
+      console.error("[SMS] Invalid JSON response");
+      return;
+    }
+    if (json?.code !== 0) {
+      console.error(`[SMS] Send failed: code=${json?.code} msg=${json?.message ?? "unknown"}`);
     }
   } catch (e) {
-    console.error(`[SMS] Request failed for ${recipient}:`, e);
+    console.error("[SMS] Request failed:", e instanceof Error ? e.message : e);
   }
 }
 

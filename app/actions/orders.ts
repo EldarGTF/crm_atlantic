@@ -1,12 +1,15 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/session";
+import { requireRole } from "@/lib/auth-guards";
+import { MANAGEMENT, ORDERS } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { sendPushToRole } from "@/lib/push";
 import { logOrderActivity } from "@/lib/activity";
+import { PaymentSchema } from "@/lib/definitions";
+import { getPrismaUserMessage } from "@/lib/prisma-errors";
 
 const OrderItemSchema = z.object({
   productType: z.string().min(1),
@@ -26,21 +29,29 @@ const ExtraWorkSchema = z.object({
 });
 
 export async function createOrder(_state: unknown, formData: FormData) {
-  const session = await getSession();
-  if (!session) redirect("/login");
+  const session = await requireRole(MANAGEMENT);
 
   const leadId = formData.get("leadId") as string;
   if (!leadId) return { message: "Заявка не указана" };
 
   const lead = await prisma.lead.findUnique({
     where: { id: leadId },
-    select: { clientId: true },
+    select: { clientId: true, order: { select: { id: true } } },
   });
   if (!lead) return { message: "Заявка не найдена" };
+  if (lead.order) return { message: "По этой заявке уже создан заказ" };
 
-  // Парсим позиции
-  const itemsRaw = JSON.parse((formData.get("items") as string) || "[]");
-  const extrasRaw = JSON.parse((formData.get("extras") as string) || "[]");
+  let itemsRaw: unknown[] = [];
+  let extrasRaw: unknown[] = [];
+  try {
+    itemsRaw = JSON.parse((formData.get("items") as string) || "[]");
+    extrasRaw = JSON.parse((formData.get("extras") as string) || "[]");
+  } catch {
+    return { message: "Некорректные данные позиций заказа" };
+  }
+  if (!Array.isArray(itemsRaw) || !Array.isArray(extrasRaw)) {
+    return { message: "Некорректные данные позиций заказа" };
+  }
 
   const items = itemsRaw.map((i: unknown) => OrderItemSchema.parse(i));
   const extras = extrasRaw.map((e: unknown) => ExtraWorkSchema.parse(e));
@@ -60,56 +71,67 @@ export async function createOrder(_state: unknown, formData: FormData) {
   );
   const totalAmount = itemsTotal + extrasTotal + (installationIncluded ? installationCost : 0);
 
-  const order = await prisma.order.create({
-    data: {
-      leadId,
-      clientId: lead.clientId,
-      totalAmount,
-      installationIncluded,
-      installationCost,
-      productionDeadline: productionDeadline ? new Date(productionDeadline) : null,
-      notes,
-      items: {
-        create: items.map((i: z.infer<typeof OrderItemSchema>) => ({
-          ...i,
-          profile: i.profile || null,
-          config: i.config || null,
-          notes: i.notes || null,
-          totalPrice: i.unitPrice * i.quantity,
-        })),
+  try {
+    const order = await prisma.order.create({
+      data: {
+        leadId,
+        clientId: lead.clientId,
+        totalAmount,
+        installationIncluded,
+        installationCost,
+        productionDeadline: productionDeadline ? new Date(productionDeadline) : null,
+        notes,
+        items: {
+          create: items.map((i: z.infer<typeof OrderItemSchema>) => ({
+            ...i,
+            profile: i.profile || null,
+            config: i.config || null,
+            notes: i.notes || null,
+            totalPrice: i.unitPrice * i.quantity,
+          })),
+        },
+        extraWorks: {
+          create: extras.map((e: z.infer<typeof ExtraWorkSchema>) => ({
+            ...e,
+            notes: e.notes || null,
+          })),
+        },
       },
-      extraWorks: {
-        create: extras.map((e: z.infer<typeof ExtraWorkSchema>) => ({
-          ...e,
-          notes: e.notes || null,
-        })),
+    });
+
+    await prisma.lead.update({
+      where: { id: leadId },
+      data: {
+        status: "AGREED",
+        statusHistory: { create: { status: "AGREED", note: "Заказ создан", userId: session.userId } },
       },
-    },
-  });
+    });
 
-  await prisma.lead.update({
-    where: { id: leadId },
-    data: {
-      status: "AGREED",
-      statusHistory: { create: { status: "AGREED", note: "Заказ создан", userId: session.userId } },
-    },
-  });
+    await logOrderActivity(order.id, session.userId, "Заказ создан");
 
-  await logOrderActivity(order.id, session.userId, "Заказ создан");
-
-  revalidatePath(`/leads/${leadId}`);
-  redirect(`/orders/${order.id}`);
+    revalidatePath(`/leads/${leadId}`);
+    redirect(`/orders/${order.id}`);
+  } catch (e) {
+    return { message: getPrismaUserMessage(e) ?? "Не удалось создать заказ" };
+  }
 }
 
 export async function addPayment(orderId: string, _state: unknown, formData: FormData) {
-  const session = await getSession();
-  if (!session) redirect("/login");
+  const session = await requireRole(MANAGEMENT);
 
-  const amount = Number(formData.get("amount"));
-  const type = formData.get("type") as "PREPAYMENT" | "FINAL" | "OTHER";
-  const notes = (formData.get("notes") as string) || null;
+  const parsed = PaymentSchema.safeParse({
+    amount: formData.get("amount"),
+    type: formData.get("type"),
+    notes: formData.get("notes") || undefined,
+  });
+  if (!parsed.success) {
+    const first = Object.values(parsed.error.flatten().fieldErrors)[0]?.[0];
+    return { message: first ?? "Проверьте данные оплаты" };
+  }
 
-  await prisma.payment.create({ data: { orderId, amount, type, notes } });
+  const { amount, type, notes } = parsed.data;
+
+  await prisma.payment.create({ data: { orderId, amount, type, notes: notes ?? null } });
 
   const payments = await prisma.payment.findMany({ where: { orderId } });
   const paid = payments.reduce((s, p) => s + Number(p.amount), 0);
@@ -133,19 +155,25 @@ export async function signAct(
   leadId: string,
   actFile?: { name: string; url: string; size: number } | null
 ) {
-  const session = await getSession();
+  const session = await requireRole(MANAGEMENT);
 
   const order = await prisma.order.findUnique({
     where: { id: orderId },
-    select: { totalAmount: true, prepaidAmount: true },
+    select: { totalAmount: true, prepaidAmount: true, act: { select: { id: true } } },
   });
   if (!order) return;
+
+  if (order.act) return { message: "Акт по этому заказу уже подписан" };
 
   if (Number(order.prepaidAmount) < Number(order.totalAmount)) {
     return { warning: "Есть непогашенная задолженность" };
   }
 
-  await prisma.act.create({ data: { orderId, signedAt: new Date(), fileUrl: actFile?.url ?? null } });
+  try {
+    await prisma.act.create({ data: { orderId, signedAt: new Date(), fileUrl: actFile?.url ?? null } });
+  } catch (e) {
+    return { message: getPrismaUserMessage(e) ?? "Не удалось подписать акт" };
+  }
 
   if (actFile) {
     await prisma.orderFile.create({
@@ -157,18 +185,18 @@ export async function signAct(
     where: { id: leadId },
     data: {
       status: "ACT_SIGNED",
-      statusHistory: { create: { status: "ACT_SIGNED", note: "Акт выполненных работ подписан", userId: session?.userId ?? null } },
+      statusHistory: { create: { status: "ACT_SIGNED", note: "Акт выполненных работ подписан", userId: session.userId } },
     },
   });
 
-  if (session) await logOrderActivity(orderId, session.userId, "Акт выполненных работ подписан");
+  await logOrderActivity(orderId, session.userId, "Акт выполненных работ подписан");
 
   revalidatePath(`/orders/${orderId}`);
   revalidatePath(`/leads/${leadId}`);
 }
 
 export async function archiveOrder(orderId: string, leadId: string) {
-  const session = await getSession();
+  const session = await requireRole(MANAGEMENT);
 
   await prisma.order.update({ where: { id: orderId }, data: { archived: true } });
   await prisma.lead.update({
@@ -176,11 +204,11 @@ export async function archiveOrder(orderId: string, leadId: string) {
     data: {
       archived: true,
       status: "CLOSED",
-      statusHistory: { create: { status: "CLOSED", note: "Сделка закрыта", userId: session?.userId ?? null } },
+      statusHistory: { create: { status: "CLOSED", note: "Сделка закрыта", userId: session.userId } },
     },
   });
 
-  if (session) await logOrderActivity(orderId, session.userId, "Сделка закрыта, заказ перемещён в архив");
+  await logOrderActivity(orderId, session.userId, "Сделка закрыта, заказ перемещён в архив");
 
   revalidatePath(`/orders/${orderId}`);
   redirect("/leads");
@@ -195,7 +223,7 @@ export async function sendToProduction(
   files: OrderFileInput[] = []
 ) {
   if (!depts.length) return { message: "Выберите хотя бы один цех" };
-  const session = await getSession();
+  const session = await requireRole(MANAGEMENT);
 
   const DEPT_NAMES: Record<string, string> = { GLASS: "Стекло", PVC: "ПВХ", ALUMINUM: "Алюминий" };
   const deptLabels = depts.map((d) => DEPT_NAMES[d] ?? d).join(", ");
@@ -215,11 +243,11 @@ export async function sendToProduction(
     where: { id: leadId },
     data: {
       status: "SENT_TO_PRODUCTION",
-      statusHistory: { create: { status: "SENT_TO_PRODUCTION", note: `Отправлен в производство — ${deptLabels}`, userId: session?.userId ?? null } },
+      statusHistory: { create: { status: "SENT_TO_PRODUCTION", note: `Отправлен в производство — ${deptLabels}`, userId: session.userId } },
     },
   });
 
-  if (session) await logOrderActivity(orderId, session.userId, `Отправлен в производство — ${deptLabels}`);
+  await logOrderActivity(orderId, session.userId, `Отправлен в производство — ${deptLabels}`);
 
   const deptRoleMap: Record<string, string> = {
     GLASS: "PRODUCTION_GLASS",
@@ -245,6 +273,7 @@ export async function getOrders(
   q?: string,
   paymentStatus?: string
 ) {
+  await requireRole(ORDERS);
   const orders = await prisma.order.findMany({
     where: {
       archived,
@@ -274,6 +303,7 @@ export async function getOrders(
 }
 
 export async function getOrder(id: string) {
+  await requireRole(ORDERS);
   const order = await prisma.order.findUnique({
     where: { id },
     include: {

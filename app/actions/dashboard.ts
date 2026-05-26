@@ -1,9 +1,12 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { requireRole } from "@/lib/auth-guards";
+import { MANAGEMENT } from "@/lib/permissions";
 import { startOfMonth, endOfMonth, startOfDay, endOfDay, subMonths } from "date-fns";
 
 export async function getDashboardStats() {
+  await requireRole(MANAGEMENT);
   const now = new Date();
   const monthStart = startOfMonth(now);
   const monthEnd = endOfMonth(now);

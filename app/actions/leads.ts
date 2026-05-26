@@ -1,7 +1,8 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/session";
+import { requireRole } from "@/lib/auth-guards";
+import { LEADS } from "@/lib/permissions";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -14,8 +15,7 @@ const LeadSchema = z.object({
 });
 
 export async function createLead(_state: unknown, formData: FormData) {
-  const session = await getSession();
-  if (!session) redirect("/login");
+  const session = await requireRole(LEADS);
 
   const raw = {
     clientId: formData.get("clientId"),
@@ -45,8 +45,7 @@ export async function createLead(_state: unknown, formData: FormData) {
 }
 
 export async function updateLeadStatus(leadId: string, status: LeadStatus, note?: string) {
-  const session = await getSession();
-  if (!session) redirect("/login");
+  const session = await requireRole(LEADS);
 
   await prisma.lead.update({
     where: { id: leadId },
@@ -63,6 +62,7 @@ export async function updateLeadStatus(leadId: string, status: LeadStatus, note?
 }
 
 export async function getLeads(search?: string, status?: string) {
+  await requireRole(LEADS);
   return prisma.lead.findMany({
     where: {
       archived: false,
@@ -88,6 +88,7 @@ export async function getLeads(search?: string, status?: string) {
 }
 
 export async function getLead(id: string) {
+  await requireRole(LEADS);
   return prisma.lead.findUnique({
     where: { id },
     include: {
@@ -116,6 +117,7 @@ export async function getLead(id: string) {
 }
 
 export async function getArchivedLeads(search?: string, status?: string) {
+  await requireRole(LEADS);
   return prisma.lead.findMany({
     where: {
       archived: true,
@@ -139,6 +141,7 @@ export async function getArchivedLeads(search?: string, status?: string) {
 }
 
 export async function getClientsForSelect() {
+  await requireRole(LEADS);
   return prisma.client.findMany({
     select: { id: true, name: true, phone: true },
     orderBy: { name: "asc" },

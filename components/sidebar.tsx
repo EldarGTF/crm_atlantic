@@ -11,8 +11,6 @@ import { logout } from "@/app/actions/auth";
 import { cn } from "@/lib/utils";
 import { PushSubscribeButton } from "@/components/push-subscribe-button";
 
-type Role = "ADMIN" | "MANAGER" | "MEASURER" | "INSTALLER" | "PRODUCTION" | "PRODUCTION_GLASS" | "PRODUCTION_PVC" | "PRODUCTION_ALUMINUM" | "ECONOMIST";
-
 const ALL_ROLES = ["ADMIN", "MANAGER", "ECONOMIST", "MEASURER", "INSTALLER", "PRODUCTION", "PRODUCTION_GLASS", "PRODUCTION_PVC", "PRODUCTION_ALUMINUM"];
 
 const navGroups = [

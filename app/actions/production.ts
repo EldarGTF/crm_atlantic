@@ -1,7 +1,8 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/session";
+import { requireRole } from "@/lib/auth-guards";
+import { MANAGEMENT, PRODUCTION } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
 import { logOrderActivity } from "@/lib/activity";
 
@@ -18,7 +19,8 @@ const DEPT_NAMES: Record<string, string> = {
 };
 
 export async function getProductionOrders(role?: string) {
-  const deptFilter = Object.entries(DEPT_ROLES).find(([, r]) => r === role)?.[0];
+  const session = await requireRole(PRODUCTION);
+  const deptFilter = Object.entries(DEPT_ROLES).find(([, r]) => r === (role ?? session.role))?.[0];
 
   const orders = await prisma.order.findMany({
     where: {
@@ -45,7 +47,7 @@ export async function getProductionOrders(role?: string) {
 }
 
 export async function takeInWorkDept(orderId: string, dept: string) {
-  const session = await getSession();
+  const session = await requireRole(PRODUCTION);
 
   await prisma.orderProductionDept.update({
     where: { orderId_dept: { orderId, dept: dept as "GLASS" | "PVC" | "ALUMINUM" } },
@@ -70,26 +72,24 @@ export async function takeInWorkDept(orderId: string, dept: string) {
       where: { id: order.leadId },
       data: {
         status: "IN_PRODUCTION",
-        statusHistory: { create: { status: "IN_PRODUCTION", note: `Взят в производство — цех ${deptLabel}`, userId: session?.userId ?? null } },
+        statusHistory: { create: { status: "IN_PRODUCTION", note: `Взят в производство — цех ${deptLabel}`, userId: session.userId } },
       },
     });
     revalidatePath(`/leads/${order.leadId}`);
-  } else if (session) {
+  } else {
     await prisma.leadHistory.create({
       data: { leadId: order.leadId, status: "IN_PRODUCTION", note: `Взят в производство — цех ${deptLabel}`, userId: session.userId },
     });
     revalidatePath(`/leads/${order.leadId}`);
   }
 
-  if (session) {
-    await logOrderActivity(orderId, session.userId, `Взят в работу — цех ${deptLabel}`);
-  }
+  await logOrderActivity(orderId, session.userId, `Взят в работу — цех ${deptLabel}`);
 
   revalidatePath("/production");
 }
 
 export async function markDeptDone(orderId: string, dept: string) {
-  const session = await getSession();
+  const session = await requireRole(PRODUCTION);
 
   await prisma.orderProductionDept.update({
     where: { orderId_dept: { orderId, dept: dept as "GLASS" | "PVC" | "ALUMINUM" } },
@@ -103,26 +103,24 @@ export async function markDeptDone(orderId: string, dept: string) {
   if (!order) return;
 
   const deptLabel = DEPT_NAMES[dept] ?? dept;
-  const allDone = order.productionDepts.every((d) => d.doneAt !== null || d.dept === dept);
+  const allDone = order.productionDepts.every((d) => d.doneAt !== null);
 
   if (allDone) {
     await prisma.lead.update({
       where: { id: order.leadId },
       data: {
         status: "READY_FOR_INSTALLATION",
-        statusHistory: { create: { status: "READY_FOR_INSTALLATION", note: "Производство завершено, готов к монтажу", userId: session?.userId ?? null } },
+        statusHistory: { create: { status: "READY_FOR_INSTALLATION", note: "Производство завершено, готов к монтажу", userId: session.userId } },
       },
     });
-    if (session) await logOrderActivity(orderId, session.userId, "Производство завершено, заказ готов к монтажу");
+    await logOrderActivity(orderId, session.userId, "Производство завершено, заказ готов к монтажу");
     revalidatePath(`/leads/${order.leadId}`);
   } else {
-    if (session) {
-      await prisma.leadHistory.create({
-        data: { leadId: order.leadId, status: "IN_PRODUCTION", note: `Завершено производство — цех ${deptLabel}`, userId: session.userId },
-      });
-      await logOrderActivity(orderId, session.userId, `Завершено производство — цех ${deptLabel}`);
-      revalidatePath(`/leads/${order.leadId}`);
-    }
+    await prisma.leadHistory.create({
+      data: { leadId: order.leadId, status: "IN_PRODUCTION", note: `Завершено производство — цех ${deptLabel}`, userId: session.userId },
+    });
+    await logOrderActivity(orderId, session.userId, `Завершено производство — цех ${deptLabel}`);
+    revalidatePath(`/leads/${order.leadId}`);
   }
 
   revalidatePath("/production");
@@ -130,16 +128,14 @@ export async function markDeptDone(orderId: string, dept: string) {
 }
 
 export async function setProductionDeadline(orderId: string, leadId: string, deadline: string) {
-  const session = await getSession();
+  const session = await requireRole(MANAGEMENT);
 
   await prisma.order.update({
     where: { id: orderId },
     data: { productionDeadline: new Date(deadline) },
   });
 
-  if (session) {
-    await logOrderActivity(orderId, session.userId, "Срок производства обновлён");
-  }
+  await logOrderActivity(orderId, session.userId, "Срок производства обновлён");
 
   revalidatePath("/production");
   revalidatePath(`/orders/${orderId}`);

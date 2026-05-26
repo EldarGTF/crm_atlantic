@@ -7,15 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { OrderItemsEditor } from "./order-items-editor";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
-
 type Props = {
   action: (state: unknown, formData: FormData) => Promise<unknown>;
   leadId: string;
 };
 
 export function NewOrderForm({ action, leadId }: Props) {
-  const router = useRouter();
   const [items, setItems] = useState<object[]>([]);
   const [extras, setExtras] = useState<object[]>([]);
   const [installation, setInstallation] = useState(true);

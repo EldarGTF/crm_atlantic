@@ -20,7 +20,7 @@ export default async function NewInstallationPage() {
 
       {orders.length === 0 ? (
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-amber-700 text-sm">
-          Нет заказов, готовых к монтажу. Сначала отметьте заказ как "Готово к монтажу" на странице производства.
+          Нет заказов, готовых к монтажу. Сначала отметьте заказ как «Готово к монтажу» на странице производства.
         </div>
       ) : (
         <NewInstallationForm orders={orders} installers={installers} />

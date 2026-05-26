@@ -3,8 +3,22 @@ import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { SessionPayload } from "./definitions";
 
-const secretKey = process.env.SESSION_SECRET;
-const encodedKey = new TextEncoder().encode(secretKey);
+let encodedKey: Uint8Array | null = null;
+
+function getEncodedSecret(): Uint8Array {
+  if (encodedKey) return encodedKey;
+
+  const secretKey = process.env.SESSION_SECRET;
+  if (secretKey && secretKey.length >= 32) {
+    encodedKey = new TextEncoder().encode(secretKey);
+    return encodedKey;
+  }
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("SESSION_SECRET must be set and at least 32 characters");
+  }
+  encodedKey = new TextEncoder().encode("dev-insecure-session-secret-min-32-chars!");
+  return encodedKey;
+}
 const COOKIE_NAME = "crm_session";
 const SESSION_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 дней
 
@@ -13,12 +27,12 @@ export async function encrypt(payload: SessionPayload) {
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("7d")
-    .sign(encodedKey);
+    .sign(getEncodedSecret());
 }
 
 export async function decrypt(token: string): Promise<SessionPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, encodedKey, {
+    const { payload } = await jwtVerify(token, getEncodedSecret(), {
       algorithms: ["HS256"],
     });
     return payload as unknown as SessionPayload;

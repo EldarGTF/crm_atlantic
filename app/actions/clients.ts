@@ -1,7 +1,8 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/session";
+import { requireRole } from "@/lib/auth-guards";
+import { CLIENTS } from "@/lib/permissions";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -17,8 +18,7 @@ const ClientSchema = z.object({
 });
 
 export async function createClient(_state: unknown, formData: FormData) {
-  const session = await getSession();
-  if (!session) redirect("/login");
+  await requireRole(CLIENTS);
 
   const raw = {
     name: formData.get("name"),
@@ -50,8 +50,7 @@ export async function createClient(_state: unknown, formData: FormData) {
 }
 
 export async function updateClient(id: string, _state: unknown, formData: FormData) {
-  const session = await getSession();
-  if (!session) redirect("/login");
+  await requireRole(CLIENTS);
 
   const raw = {
     name: formData.get("name"),
@@ -85,6 +84,7 @@ export async function updateClient(id: string, _state: unknown, formData: FormDa
 }
 
 export async function getClients(search?: string) {
+  await requireRole(CLIENTS);
   return prisma.client.findMany({
     where: search
       ? {
@@ -101,6 +101,7 @@ export async function getClients(search?: string) {
 }
 
 export async function getClient(id: string) {
+  await requireRole(CLIENTS);
   return prisma.client.findUnique({
     where: { id },
     include: {

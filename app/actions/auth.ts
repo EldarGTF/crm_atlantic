@@ -2,9 +2,21 @@
 
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { headers } from "next/headers";
 import { createSession, deleteSession } from "@/lib/session";
 import { LoginSchema, ActionState } from "@/lib/definitions";
+import { HOME_BY_ROLE } from "@/lib/permissions";
+import { checkRateLimit, clearRateLimit } from "@/lib/rate-limit";
 import { redirect } from "next/navigation";
+
+async function getClientIp(): Promise<string> {
+  const h = await headers();
+  return (
+    h.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    h.get("x-real-ip") ||
+    "unknown"
+  );
+}
 
 export async function login(
   _state: ActionState,
@@ -20,8 +32,19 @@ export async function login(
     return { errors: parsed.error.flatten().fieldErrors };
   }
 
+  const email = parsed.data.email.toLowerCase();
+  const ip = await getClientIp();
+  const rateKey = `login:${ip}:${email}`;
+  const rate = checkRateLimit(rateKey, 5, 15 * 60 * 1000);
+  if (!rate.ok) {
+    const minutes = Math.ceil(rate.retryAfterSec / 60);
+    return {
+      message: `Слишком много попыток. Повторите через ${minutes} мин.`,
+    };
+  }
+
   const user = await prisma.user.findUnique({
-    where: { email: parsed.data.email },
+    where: { email },
   });
 
   if (!user || !user.active) {
@@ -33,20 +56,10 @@ export async function login(
     return { message: "Неверный email или пароль" };
   }
 
+  clearRateLimit(rateKey);
   await createSession({ userId: user.id, role: user.role, name: user.name });
 
-  const homeByRole: Record<string, string> = {
-    ADMIN:      "/dashboard",
-    MANAGER:    "/dashboard",
-    MEASURER:   "/measurements",
-    INSTALLER:  "/installation",
-    PRODUCTION:          "/production",
-    PRODUCTION_GLASS:    "/production",
-    PRODUCTION_PVC:      "/production",
-    PRODUCTION_ALUMINUM: "/production",
-    ECONOMIST:           "/dashboard",
-  };
-  redirect(homeByRole[user.role] ?? "/dashboard");
+  redirect(HOME_BY_ROLE[user.role] ?? "/dashboard");
 }
 
 export async function logout() {

@@ -1,8 +1,11 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { requireRole } from "@/lib/auth-guards";
+import { MANAGEMENT } from "@/lib/permissions";
 
 export async function getStaffReport() {
+  await requireRole(MANAGEMENT);
   const now = new Date();
 
   const [measurements, installations, productionDepts] = await Promise.all([
@@ -123,6 +126,7 @@ export async function getStaffReport() {
 }
 
 export async function getAnalytics() {
+  await requireRole(MANAGEMENT);
   const now = new Date();
   const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1);
 
