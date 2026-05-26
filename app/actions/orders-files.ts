@@ -6,6 +6,7 @@ import { requireRole } from "@/lib/auth-guards";
 import { ORDERS } from "@/lib/permissions";
 import { OrderFileType } from "@/lib/generated/prisma/client";
 import { z } from "zod";
+import { deleteStoredFileByUrl } from "@/lib/storage-object";
 
 const FileInputSchema = z.object({
   name: z.string().min(1),
@@ -41,7 +42,14 @@ export async function addOrderFile(
 export async function deleteOrderFile(orderId: string, fileId: string) {
   await requireRole(ORDERS);
 
+  const file = await prisma.orderFile.findFirst({
+    where: { id: fileId, orderId },
+    select: { url: true },
+  });
+  if (!file) return { error: "Файл не найден" };
+
   try {
+    await deleteStoredFileByUrl(file.url);
     await prisma.orderFile.delete({ where: { id: fileId, orderId } });
   } catch {
     return { error: "Не удалось удалить файл" };

@@ -1,0 +1,12 @@
+{
+  "name": "Atlantic CRM",
+  "short_name": "Atlantic",
+  "description": "CRM Atlantic — заявки, заказы, производство",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F4F6F8",
+  "theme_color": "#2563EB",
+  "lang": "ru",
+  "orientation": "portrait-primary",
+  "icons": []
+}

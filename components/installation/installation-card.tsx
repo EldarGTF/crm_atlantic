@@ -6,6 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { markInstallationDone, takeInstallationInWork } from "@/app/actions/installation";
 import { RescheduleInstallationButton } from "@/components/installation/reschedule-installation-button";
+import { InstallationChecklist } from "@/components/installation/installation-checklist";
+import { parseChecklist } from "@/lib/installation-checklist";
+import { formatOrderNumber } from "@/lib/order-number";
 import { Calendar, MapPin, User, CheckCircle, ChevronRight, PlayCircle } from "lucide-react";
 import { format, isPast, isToday } from "date-fns";
 import { ru } from "date-fns/locale";
@@ -22,9 +25,11 @@ type Props = {
     installer: { name: string };
     order: {
       id: string;
+      number: number;
       leadId: string;
       lead: { id: string; client: { name: string; phone: string } };
     };
+    checklist: unknown;
   };
   role: string;
 };
@@ -55,7 +60,7 @@ export function InstallationCard({ installation: inst, role }: Props) {
         <div className="space-y-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <Link href={`/orders/${inst.order.id}`} className="font-semibold text-gray-900 hover:text-blue-600">
-              {inst.order.lead.client.name}
+              {formatOrderNumber(inst.order.number)} — {inst.order.lead.client.name}
             </Link>
             {inst.doneAt ? (
               <Badge className="bg-green-100 text-green-700 border-green-200">
@@ -106,6 +111,14 @@ export function InstallationCard({ installation: inst, role }: Props) {
             {format(new Date(inst.inWorkAt), "d MMM, HH:mm", { locale: ru })}
           </span>
         </div>
+      )}
+
+      {!inst.doneAt && (
+        <InstallationChecklist
+          installationId={inst.id}
+          checklist={parseChecklist(inst.checklist)}
+          disabled={!canAct}
+        />
       )}
 
       {!inst.doneAt && (

@@ -17,6 +17,8 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Atlantic CRM",
   description: "Система управления продажами Atlantic",
+  manifest: "/manifest.json",
+  appleWebApp: { capable: true, title: "Atlantic CRM" },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

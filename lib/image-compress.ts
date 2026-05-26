@@ -1,0 +1,32 @@
+/** Сжатие изображений в браузере перед загрузкой (только client). */
+export async function compressImageIfNeeded(
+  file: File,
+  maxWidth = 1920,
+  quality = 0.82
+): Promise<File> {
+  if (!file.type.startsWith("image/") || file.type === "image/gif") {
+    return file;
+  }
+  if (file.size < 400_000) return file;
+
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, maxWidth / bitmap.width);
+  const w = Math.round(bitmap.width * scale);
+  const h = Math.round(bitmap.height * scale);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return file;
+  ctx.drawImage(bitmap, 0, 0, w, h);
+  bitmap.close();
+
+  const blob = await new Promise<Blob | null>((resolve) =>
+    canvas.toBlob(resolve, "image/jpeg", quality)
+  );
+  if (!blob || blob.size >= file.size) return file;
+
+  const name = file.name.replace(/\.[^.]+$/, "") + ".jpg";
+  return new File([blob], name, { type: "image/jpeg", lastModified: Date.now() });
+}

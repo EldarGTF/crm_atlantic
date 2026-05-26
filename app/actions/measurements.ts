@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { sendPushToUser } from "@/lib/push";
 import { sendMeasurementSms, sendRescheduleSms } from "@/lib/sms";
+import { deleteStoredFileByUrl } from "@/lib/storage-object";
 
 const MeasurementSchema = z.object({
   leadId: z.string().min(1),
@@ -173,7 +174,14 @@ export async function deleteMeasurementFile(measurementId: string, fileId: strin
   const session = await requireRole(MEASUREMENTS);
   await assertMeasurementAccess(measurementId, session);
 
+  const file = await prisma.measurementFile.findFirst({
+    where: { id: fileId, measurementId },
+    select: { url: true },
+  });
+  if (!file) return { error: "Файл не найден" };
+
   try {
+    await deleteStoredFileByUrl(file.url);
     await prisma.measurementFile.delete({ where: { id: fileId, measurementId } });
   } catch {
     return { error: "Не удалось удалить файл" };

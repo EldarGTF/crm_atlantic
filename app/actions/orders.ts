@@ -10,6 +10,8 @@ import { sendPushToRole } from "@/lib/push";
 import { logOrderActivity, recordLeadStatusForOrder } from "@/lib/activity";
 import { PaymentSchema } from "@/lib/definitions";
 import { getPrismaUserMessage } from "@/lib/prisma-errors";
+import { notifyRoles } from "@/lib/notify";
+import { normalizePhone } from "@/lib/phone";
 
 const OrderItemSchema = z.object({
   productType: z.string().min(1),
@@ -100,6 +102,13 @@ export async function createOrder(_state: unknown, formData: FormData) {
     });
 
     await recordLeadStatusForOrder(leadId, order.id, session.userId, "AGREED", "Заказ создан");
+
+    await notifyRoles(
+      ["ADMIN", "MANAGER", "ECONOMIST"],
+      "Новый заказ",
+      `Создан заказ по заявке`,
+      `/orders/${order.id}`
+    );
 
     revalidatePath(`/leads/${leadId}`);
     redirect(`/orders/${order.id}`);
@@ -257,19 +266,28 @@ export async function sendToProduction(
 export async function getOrders(
   archived = false,
   q?: string,
-  paymentStatus?: string
+  paymentStatus?: string,
+  leadStatus?: string
 ) {
   await requireRole(ORDERS);
+  const digits = q ? normalizePhone(q) : "";
+  const numQ = q?.replace(/\D/g, "") ?? "";
+  const orderNum = numQ.length > 0 ? parseInt(numQ, 10) : NaN;
+
   const orders = await prisma.order.findMany({
     where: {
       archived,
       ...(paymentStatus ? { paymentStatus: paymentStatus as "UNPAID" | "PREPAID" | "PAID" } : {}),
-      ...(q ? {
-        OR: [
-          { lead: { client: { name: { contains: q, mode: "insensitive" } } } },
-          { lead: { client: { phone: { contains: q } } } },
-        ],
-      } : {}),
+      ...(leadStatus ? { lead: { status: leadStatus as never } } : {}),
+      ...(q
+        ? {
+            OR: [
+              ...(!Number.isNaN(orderNum) ? [{ number: orderNum }] : []),
+              { lead: { client: { name: { contains: q, mode: "insensitive" as const } } } },
+              { lead: { client: { phone: { contains: digits.length >= 6 ? digits : q } } } },
+            ],
+          }
+        : {}),
     },
     include: {
       lead: { include: { client: { select: { name: true, phone: true } } } },

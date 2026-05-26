@@ -18,9 +18,10 @@ const DEPT_NAMES: Record<string, string> = {
   ALUMINUM: "Алюминий",
 };
 
-export async function getProductionOrders(role?: string) {
+export async function getProductionOrders(role?: string, dept?: string) {
   const session = await requireRole(PRODUCTION);
-  const deptFilter = Object.entries(DEPT_ROLES).find(([, r]) => r === (role ?? session.role))?.[0];
+  const roleDept = Object.entries(DEPT_ROLES).find(([, r]) => r === (role ?? session.role))?.[0];
+  const deptFilter = roleDept ?? (dept && ["GLASS", "PVC", "ALUMINUM"].includes(dept) ? dept : undefined);
 
   const orders = await prisma.order.findMany({
     where: {

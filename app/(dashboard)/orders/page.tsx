@@ -5,6 +5,7 @@ import { ru } from "date-fns/locale";
 import { Phone, Calendar, AlertCircle, FileCheck, Package, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { getSession } from "@/lib/session";
+import { formatOrderNumber } from "@/lib/order-number";
 
 // Этапы пайплайна заказа по порядку
 const STAGES = [
@@ -27,16 +28,16 @@ const PAYMENT_CONFIG = {
   PAID:     { label: "Оплачен",     cls: "bg-emerald-50 text-emerald-600 border-emerald-200" },
 } as const;
 
-type Props = { searchParams: Promise<{ filter?: string; q?: string; payment?: string }> };
+type Props = { searchParams: Promise<{ filter?: string; q?: string; payment?: string; status?: string }> };
 
 export default async function OrdersPage({ searchParams }: Props) {
-  const { filter, q, payment } = await searchParams;
+  const { filter, q, payment, status: leadStatus } = await searchParams;
   const [session] = await Promise.all([getSession()]);
   const role = session?.role ?? "MANAGER";
   const canExport = role === "ADMIN" || role === "MANAGER" || role === "ECONOMIST";
 
   const archived = filter === "archive";
-  const orders = await getOrders(archived, q, payment);
+  const orders = await getOrders(archived, q, payment, leadStatus);
 
   const active  = orders.filter((o) => !o.act && !o.archived);
   const signed  = orders.filter((o) => !!o.act && !o.archived);
@@ -77,12 +78,13 @@ export default async function OrdersPage({ searchParams }: Props) {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
         <Input
           name="q"
-          placeholder="Поиск по клиенту, телефону..."
+          placeholder="Поиск: клиент, телефон, № заказа..."
           defaultValue={q}
           className="pl-9"
         />
         {filter && <input type="hidden" name="filter" value={filter} />}
         {payment && <input type="hidden" name="payment" value={payment} />}
+        {leadStatus && <input type="hidden" name="status" value={leadStatus} />}
       </form>
 
       {/* Табы + фильтр оплаты */}
@@ -104,6 +106,20 @@ export default async function OrdersPage({ searchParams }: Props) {
           })}
         </div>
         {!archived && (
+          <>
+          <div className="flex gap-1.5 flex-wrap">
+            {STAGES.map(({ key, label }) => {
+              const isActive = leadStatus === key;
+              const href = `/orders?status=${key}${q ? `&q=${q}` : ""}${payment ? `&payment=${payment}` : ""}${filter ? `&filter=${filter}` : ""}`;
+              return (
+                <Link key={key} href={href}
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium border ${isActive ? "bg-violet-600 text-white border-violet-600" : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"}`}
+                >
+                  {label}
+                </Link>
+              );
+            })}
+          </div>
           <div className="flex gap-1.5 flex-wrap">
             {paymentFilters.map(({ label, value }) => {
               const isActive = payment === value || (!payment && !value);
@@ -119,6 +135,7 @@ export default async function OrdersPage({ searchParams }: Props) {
               );
             })}
           </div>
+          </>
         )}
       </div>
 
@@ -150,7 +167,9 @@ export default async function OrdersPage({ searchParams }: Props) {
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-semibold text-slate-900">{order.lead.client.name}</span>
+                      <span className="font-semibold text-slate-900">
+                        {formatOrderNumber(order.number)} — {order.lead.client.name}
+                      </span>
                       <span className={`inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full border ${payment.cls}`}>
                         {payment.label}
                       </span>

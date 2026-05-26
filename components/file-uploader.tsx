@@ -6,6 +6,7 @@ import { Camera, Upload, X, File, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import Image from "next/image";
 import { uploadFileToStorage } from "@/lib/upload-client";
+import { compressImageIfNeeded } from "@/lib/image-compress";
 
 type UploadedFile = { id: string; name: string; url: string; size: number };
 
@@ -48,7 +49,8 @@ export function FileUploader({ folder, existingFiles = [], onUpload, onDelete }:
         continue;
       }
       try {
-        const data = await uploadFileToStorage(file, folder);
+        const prepared = await compressImageIfNeeded(file);
+        const data = await uploadFileToStorage(prepared, folder);
         const saved = await onUpload(data);
         if (saved && "error" in saved) {
           toast.error(saved.error);

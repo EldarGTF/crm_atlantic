@@ -14,6 +14,9 @@ import { FileUploader } from "@/components/file-uploader";
 import { addOrderFile, deleteOrderFile } from "@/app/actions/orders-files";
 import { getSession } from "@/lib/session";
 import { WarrantySection } from "@/components/orders/warranty-section";
+import { formatOrderNumber } from "@/lib/order-number";
+import { InstallationChecklist } from "@/components/installation/installation-checklist";
+import { parseChecklist } from "@/lib/installation-checklist";
 
 const PAYMENT_STATUS = { UNPAID: "Не оплачен", PREPAID: "Предоплата", PAID: "Оплачен" };
 const PAYMENT_STATUS_COLORS = { UNPAID: "destructive", PREPAID: "default", PAID: "secondary" } as const;
@@ -67,7 +70,7 @@ export default async function OrderPage({ params }: Props) {
           <ChevronLeft className="h-4 w-4" /> {order.lead.client.name}
         </Link>
         <div className="flex items-center justify-between gap-3 flex-wrap">
-          <h1 className="text-2xl font-bold text-gray-900">Заказ</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Заказ {formatOrderNumber(order.number)}</h1>
           <div className="flex items-center gap-2">
             <Badge variant={PAYMENT_STATUS_COLORS[order.paymentStatus]}>
               {PAYMENT_STATUS[order.paymentStatus]}
@@ -251,6 +254,12 @@ export default async function OrderPage({ params }: Props) {
               <p className="text-sm text-green-600">
                 Выполнен: {format(new Date(order.installation.doneAt), "d MMMM yyyy", { locale: ru })}
               </p>
+            )}
+            {!order.installation.doneAt && canEdit && (
+              <InstallationChecklist
+                installationId={order.installation.id}
+                checklist={parseChecklist(order.installation.checklist)}
+              />
             )}
           </div>
         ) : (

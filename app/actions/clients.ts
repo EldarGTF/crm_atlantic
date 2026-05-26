@@ -7,6 +7,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { ClientStatus } from "@/lib/generated/prisma/client";
+import { normalizePhone, phonesMatch } from "@/lib/phone";
 
 const ClientSchema = z.object({
   name: z.string().min(2, "Минимум 2 символа"),
@@ -16,6 +17,19 @@ const ClientSchema = z.object({
   status: z.nativeEnum(ClientStatus).default(ClientStatus.REGULAR),
   notes: z.string().optional(),
 });
+
+export async function findClientsByPhone(phone: string) {
+  await requireRole(CLIENTS);
+  const digits = normalizePhone(phone);
+  if (digits.length < 6) return [];
+  const candidates = await prisma.client.findMany({
+    where: { phone: { contains: digits.slice(-10) } },
+    take: 10,
+    orderBy: { updatedAt: "desc" },
+    select: { id: true, name: true, phone: true },
+  });
+  return candidates.filter((c) => phonesMatch(c.phone, phone));
+}
 
 export async function createClient(_state: unknown, formData: FormData) {
   await requireRole(CLIENTS);
@@ -32,6 +46,15 @@ export async function createClient(_state: unknown, formData: FormData) {
   const parsed = ClientSchema.safeParse(raw);
   if (!parsed.success) {
     return { errors: parsed.error.flatten().fieldErrors };
+  }
+
+  const force = formData.get("forceDuplicate") === "1";
+  const duplicates = await findClientsByPhone(parsed.data.phone);
+  if (duplicates.length > 0 && !force) {
+    return {
+      duplicateWarning: duplicates,
+      message: "Клиент с таким телефоном уже есть. Сохранить всё равно?",
+    };
   }
 
   const client = await prisma.client.create({

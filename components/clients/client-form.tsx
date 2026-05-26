@@ -26,7 +26,11 @@ type Props = {
 
 export function ClientForm({ action, client }: Props) {
   const [state, formAction, pending] = useActionState(action, undefined) as [
-    { errors?: Record<string, string[]> } | undefined,
+    {
+      errors?: Record<string, string[]>;
+      duplicateWarning?: { id: string; name: string; phone: string }[];
+      message?: string;
+    } | undefined,
     (formData: FormData) => void,
     boolean,
   ];
@@ -88,6 +92,26 @@ export function ClientForm({ action, client }: Props) {
           placeholder="Дополнительная информация о клиенте..."
           className="bg-slate-50 border-slate-200 resize-none" />
       </div>
+
+      {state?.duplicateWarning && state.duplicateWarning.length > 0 && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-2">
+          <p className="text-sm font-medium text-amber-900">{state.message}</p>
+          <ul className="text-sm text-amber-800 space-y-1">
+            {state.duplicateWarning.map((d) => (
+              <li key={d.id}>
+                <a href={`/clients/${d.id}`} className="underline">
+                  {d.name}
+                </a>{" "}
+                — {d.phone}
+              </li>
+            ))}
+          </ul>
+          <input type="hidden" name="forceDuplicate" value="1" />
+          <Button type="submit" variant="outline" disabled={pending}>
+            Создать всё равно
+          </Button>
+        </div>
+      )}
 
       <Button type="submit" disabled={pending} className="w-full sm:w-auto">
         {pending ? "Сохранение..." : client ? "Сохранить изменения" : "Создать клиента"}

@@ -4,8 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Users, FileText, Ruler, Package,
-  Wrench, Archive, CheckSquare, HardHat, UserCog, LogOut, Menu, X, BarChart3, CalendarCheck, ShieldCheck,
+  Wrench, Archive, CheckSquare, HardHat, UserCog, LogOut, Menu, X, BarChart3, CalendarCheck, ShieldCheck, CalendarDays,
 } from "lucide-react";
+import { NotificationsBell } from "@/components/notifications-bell";
 import { useState } from "react";
 import { logout } from "@/app/actions/auth";
 import { cn } from "@/lib/utils";
@@ -18,6 +19,7 @@ const navGroups = [
     label: "Продажи",
     items: [
       { href: "/today",        label: "Сегодня",      icon: CalendarCheck,   roles: ALL_ROLES },
+      { href: "/calendar",     label: "Календарь",    icon: CalendarDays,    roles: ["ADMIN", "MANAGER", "ECONOMIST", "MEASURER", "INSTALLER"] },
       { href: "/dashboard",    label: "Дашборд",      icon: LayoutDashboard, roles: ["ADMIN", "MANAGER", "ECONOMIST"] },
       { href: "/analytics",    label: "Аналитика",    icon: BarChart3,       roles: ["ADMIN", "MANAGER", "ECONOMIST"] },
       { href: "/leads",        label: "Заявки",        icon: FileText,        roles: ["ADMIN", "MANAGER", "ECONOMIST"] },
@@ -70,7 +72,26 @@ function NavItem({
   );
 }
 
-function SidebarContent({ role, onLinkClick }: { role: string; onLinkClick?: () => void }) {
+type NotificationRow = {
+  id: string;
+  title: string;
+  body: string | null;
+  href: string | null;
+  readAt: Date | null;
+  createdAt: Date;
+};
+
+function SidebarContent({
+  role,
+  onLinkClick,
+  notifications = [],
+  unreadCount = 0,
+}: {
+  role: string;
+  onLinkClick?: () => void;
+  notifications?: NotificationRow[];
+  unreadCount?: number;
+}) {
   return (
     <div className="flex flex-col h-full">
       {/* Логотип */}
@@ -115,6 +136,7 @@ function SidebarContent({ role, onLinkClick }: { role: string; onLinkClick?: () 
 
       {/* Уведомления + Выход */}
       <div className="px-2 py-3 space-y-1">
+        <NotificationsBell initial={notifications} unreadCount={unreadCount} />
         <PushSubscribeButton />
         <form action={logout}>
           <button
@@ -130,14 +152,22 @@ function SidebarContent({ role, onLinkClick }: { role: string; onLinkClick?: () 
   );
 }
 
-export function Sidebar({ role }: { role: string }) {
+export function Sidebar({
+  role,
+  notifications = [],
+  unreadCount = 0,
+}: {
+  role: string;
+  notifications?: NotificationRow[];
+  unreadCount?: number;
+}) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
     <>
       {/* Desktop */}
       <aside className="hidden md:flex flex-col w-[210px] shrink-0 h-screen sticky top-0 bg-white border-r border-slate-200">
-        <SidebarContent role={role} />
+        <SidebarContent role={role} notifications={notifications} unreadCount={unreadCount} />
       </aside>
 
       {/* Mobile top bar */}
@@ -170,7 +200,12 @@ export function Sidebar({ role }: { role: string }) {
             >
               <X className="h-4 w-4 text-slate-500" />
             </button>
-            <SidebarContent role={role} onLinkClick={() => setMobileOpen(false)} />
+            <SidebarContent
+              role={role}
+              notifications={notifications}
+              unreadCount={unreadCount}
+              onLinkClick={() => setMobileOpen(false)}
+            />
           </div>
         </>
       )}

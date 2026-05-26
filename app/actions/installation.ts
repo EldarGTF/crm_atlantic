@@ -8,6 +8,11 @@ import { redirect } from "next/navigation";
 import { sendPushToUser } from "@/lib/push";
 import { recordLeadStatusForOrder, recordOrderStep } from "@/lib/activity";
 import { sendInstallationSms, sendRescheduleSms } from "@/lib/sms";
+import {
+  createDefaultChecklist,
+  parseChecklist,
+  type InstallationChecklist,
+} from "@/lib/installation-checklist";
 
 export async function getInstallations() {
   await requireRole(INSTALLATION);
@@ -86,7 +91,14 @@ export async function scheduleInstallation(_state: unknown, formData: FormData) 
   const installer = await prisma.user.findUnique({ where: { id: installerId }, select: { name: true } });
 
   await prisma.installation.create({
-    data: { orderId, installerId, scheduledAt: new Date(scheduledAt), address, notes },
+    data: {
+      orderId,
+      installerId,
+      scheduledAt: new Date(scheduledAt),
+      address,
+      notes,
+      checklist: createDefaultChecklist(),
+    },
   });
 
   const scheduleNote = `Монтаж назначен — ${installer?.name ?? ""}`;
@@ -179,4 +191,36 @@ export async function markInstallationDone(installationId: string, orderId: stri
 
   revalidatePath("/installation");
   revalidatePath(`/orders/${orderId}`);
+}
+
+export async function toggleInstallationChecklistItem(
+  installationId: string,
+  itemId: string
+) {
+  await requireRole(INSTALLATION);
+
+  const inst = await prisma.installation.findUnique({
+    where: { id: installationId },
+    select: { checklist: true, orderId: true },
+  });
+  if (!inst) return;
+
+  const checklist = parseChecklist(inst.checklist);
+  const items = checklist.items.map((item) =>
+    item.id === itemId
+      ? {
+          ...item,
+          done: !item.done,
+          doneAt: !item.done ? new Date().toISOString() : undefined,
+        }
+      : item
+  );
+
+  await prisma.installation.update({
+    where: { id: installationId },
+    data: { checklist: { items } as InstallationChecklist },
+  });
+
+  revalidatePath("/installation");
+  revalidatePath(`/orders/${inst.orderId}`);
 }

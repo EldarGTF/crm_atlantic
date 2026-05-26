@@ -1,13 +1,25 @@
+import Link from "next/link";
 import { getProductionOrders } from "@/app/actions/production";
 import { ProductionCard } from "@/components/production/production-card";
 import { Package } from "lucide-react";
 import { getSession } from "@/lib/session";
 
-export default async function ProductionPage() {
+type Props = { searchParams: Promise<{ dept?: string }> };
+
+const DEPT_TABS = [
+  { value: "", label: "Все цеха" },
+  { value: "GLASS", label: "Стекло" },
+  { value: "PVC", label: "ПВХ" },
+  { value: "ALUMINUM", label: "Алюминий" },
+];
+
+export default async function ProductionPage({ searchParams }: Props) {
+  const { dept } = await searchParams;
   const session = await getSession();
   const role = session?.role ?? "MANAGER";
+  const isDeptRole = ["PRODUCTION_GLASS", "PRODUCTION_PVC", "PRODUCTION_ALUMINUM"].includes(role);
 
-  const orders = await getProductionOrders(role);
+  const orders = await getProductionOrders(role, isDeptRole ? undefined : dept);
 
   const waiting = orders.filter((o) => o.lead.status === "SENT_TO_PRODUCTION");
   const inWork = orders.filter((o) => o.lead.status === "IN_PRODUCTION");
@@ -32,6 +44,24 @@ export default async function ProductionPage() {
           </span>
         </div>
       </div>
+
+      {!isDeptRole && (
+        <div className="flex gap-2 flex-wrap">
+          {DEPT_TABS.map(({ value, label }) => (
+            <Link
+              key={value || "all"}
+              href={value ? `/production?dept=${value}` : "/production"}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium border ${
+                (dept ?? "") === value
+                  ? "bg-blue-600 text-white border-blue-600"
+                  : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+              }`}
+            >
+              {label}
+            </Link>
+          ))}
+        </div>
+      )}
 
       {orders.length === 0 ? (
         <div className="text-center py-20 text-gray-400">

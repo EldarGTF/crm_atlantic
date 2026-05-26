@@ -8,6 +8,7 @@ import { takeInWorkDept, markDeptDone } from "@/app/actions/production";
 import { Calendar, ChevronRight, Package, Play, CheckCircle, Clock } from "lucide-react";
 import { format, isPast, isToday, differenceInDays } from "date-fns";
 import { ru } from "date-fns/locale";
+import { formatOrderNumber } from "@/lib/order-number";
 
 type DeptRecord = {
   dept: string;
@@ -19,6 +20,7 @@ type Item = { productType: string; width: number; height: number; quantity: numb
 
 type Order = {
   id: string;
+  number: number;
   productionDeadline: Date | null;
   lead: {
     id: string;
@@ -139,7 +141,7 @@ export function ProductionCard({ order, role }: { order: Order; role: string }) 
         <div className="space-y-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <Link href={`/orders/${order.id}`} className="font-semibold text-gray-900 hover:text-blue-600">
-              {lead.client.name}
+              {formatOrderNumber(order.number)} — {lead.client.name}
             </Link>
             <Badge className={STATUS_COLORS[status]}>{STATUS_LABELS[status] ?? status}</Badge>
           </div>
