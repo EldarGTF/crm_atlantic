@@ -21,6 +21,24 @@ export async function uploadFileToStorage(
     throw new Error(signData.error ?? "Не удалось подготовить загрузку");
   }
 
+  if (signData.uploadMode === "server" && signData.provider === "s3") {
+    const form = new FormData();
+    form.append("file", file);
+    form.append("path", signData.path);
+    form.append("contentType", signData.contentType || file.type || "application/octet-stream");
+
+    const putRes = await fetch("/api/upload/put", { method: "POST", body: form });
+    const putData = await putRes.json().catch(() => ({}));
+    if (!putRes.ok) {
+      throw new Error(putData.error ?? `Ошибка загрузки (${putRes.status})`);
+    }
+    return {
+      name: signData.name ?? file.name,
+      url: putData.publicUrl ?? signData.publicUrl,
+      size: putData.size ?? file.size,
+    };
+  }
+
   if (!signData.signedUrl) {
     throw new Error("Некорректный ответ сервера загрузки");
   }

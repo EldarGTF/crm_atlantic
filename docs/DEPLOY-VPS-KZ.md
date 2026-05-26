@@ -139,7 +139,7 @@ PostgreSQL — только внутри Docker-сети
 В `.env` обязательно:
 
 - `S3_PUBLIC_URL=http://ВАШ_IP/files`
-- `S3_SIGN_ENDPOINT=http://ВАШ_IP/s3`
+- `S3_UPLOAD_MODE=server` (загрузка через приложение, без 403 от MinIO)
 
 ## Отличие от Vercel + Supabase
 
@@ -152,7 +152,7 @@ PostgreSQL — только внутри Docker-сети
 
 ## Проблемы
 
-**Не грузятся фото / Failed to fetch** — в `.env` задайте `S3_SIGN_ENDPOINT=http://IP/s3` и `S3_PUBLIC_URL=http://IP/files`, пересоберите app и перезапустите nginx (`docker compose up -d`).
+**Не грузятся фото / 403 / Failed to fetch** — `S3_UPLOAD_MODE=server` и `S3_PUBLIC_URL=http://IP/files`, затем `docker compose build app && docker compose up -d`.
 
 **502 от nginx** — `docker compose logs app` — часто нет `SESSION_SECRET` или БД не поднялась.
 

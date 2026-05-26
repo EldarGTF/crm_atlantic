@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { MAX_UPLOAD_BYTES, buildUploadPath } from "@/lib/upload-policy";
-import { createUploadSignature } from "@/lib/storage-server";
+import { createUploadSignature, useServerS3Upload } from "@/lib/storage-server";
 
 const SignSchema = z.object({
   folder: z.string().min(1),
@@ -49,6 +49,7 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({
     provider: signed.provider,
+    uploadMode: signed.provider === "s3" && useServerS3Upload() ? "server" : "direct",
     path: signed.path,
     token: signed.token,
     signedUrl: signed.signedUrl,
