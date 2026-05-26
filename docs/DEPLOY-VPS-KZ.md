@@ -15,9 +15,15 @@
 
 ## 1. Подготовка сервера
 
+**Важно:** используйте только **Docker Compose v2** — команда `docker compose` (с пробелом).  
+Не используйте устаревший пакет `docker-compose` **1.29** — при обновлении app часто падает с `KeyError: 'ContainerConfig'`.
+
 ```bash
 sudo apt update && sudo apt upgrade -y
 sudo apt install -y git docker.io docker-compose-plugin
+# Удалите старый compose 1.29, если когда-то ставили:
+sudo apt remove -y docker-compose 2>/dev/null || true
+docker compose version   # должно быть v2.x
 sudo systemctl enable docker --now
 sudo usermod -aG docker $USER
 # перелогиньтесь
@@ -106,9 +112,19 @@ sudo certbot --nginx -d crm.atlantic.kz
 ```bash
 cd /opt/crm_atlantic
 git pull
+bash scripts/deploy.sh
+```
+
+Или вручную (только `docker compose`, не `docker-compose`):
+
+```bash
+docker compose down
 docker compose build app
 docker compose up -d
+docker compose exec app npx prisma db push
 ```
+
+Не используйте `docker-compose up --force-recreate` на старом 1.29.
 
 ## 9. Резервное копирование
 
@@ -151,6 +167,17 @@ PostgreSQL — только внутри Docker-сети
 | Администрирование | минимум | вы сами (бэкапы, SSL) |
 
 ## Проблемы
+
+**`KeyError: 'ContainerConfig'` при `up`** — на сервере стоит `docker-compose` 1.29. Удалите его, поставьте плагин v2 и перезапустите:
+
+```bash
+sudo apt remove -y docker-compose
+sudo apt install -y docker-compose-plugin
+cd /opt/crm_atlantic
+docker compose down
+docker rm -f crm_atlantic_app_1 2>/dev/null || true
+bash scripts/deploy.sh
+```
 
 **Не грузятся фото / 403 / Failed to fetch** — `S3_UPLOAD_MODE=server` и `S3_PUBLIC_URL=http://IP/files`, затем `docker compose build app && docker compose up -d`.
 

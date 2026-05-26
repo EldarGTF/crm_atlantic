@@ -16,13 +16,11 @@
 
 ## После `git pull` на VPS
 
+Только **Docker Compose v2** (`docker compose`). На сервере: `sudo apt remove -y docker-compose && sudo apt install -y docker-compose-plugin`.
+
 ```bash
 cd /opt/crm_atlantic
-git pull
-docker compose down
-docker compose build app
-docker compose up -d
-docker compose exec app npx prisma db push
+bash scripts/deploy.sh
 ```
 
 Добавьте иконки PWA (опционально): `public/icon-192.png`, `public/icon-512.png`.

@@ -14,6 +14,8 @@ CRM для оконной компании: заявки, клиенты, зак
 
 Полная инструкция: **[docs/DEPLOY-VPS-KZ.md](docs/DEPLOY-VPS-KZ.md)** — Docker, PostgreSQL, MinIO, Nginx на одном сервере.
 
+Используйте **Docker Compose v2** (`docker compose`), не пакет `docker-compose` 1.29.
+
 ```bash
 cp .env.vps.example .env
 docker compose up -d --build

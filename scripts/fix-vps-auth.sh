@@ -38,14 +38,15 @@ case "$SECRET_LINE" in
     ;;
 esac
 
-# --- docker compose command ---
-if docker compose version >/dev/null 2>&1; then
-  DC="docker compose"
-else
-  DC="docker-compose"
+# --- Docker Compose v2 only (не docker-compose 1.29 — KeyError ContainerConfig) ---
+if ! docker compose version >/dev/null 2>&1; then
+  echo "Ошибка: нужен Docker Compose v2: «docker compose»"
+  echo "  sudo apt install -y docker-compose-plugin"
+  echo "  sudo apt remove -y docker-compose"
+  exit 1
 fi
-
-echo "==> Используем: $DC"
+DC="docker compose"
+echo "==> $(docker compose version | head -1)"
 
 if [ -d .git ]; then
   echo "==> git pull (если есть обновления)"
