@@ -1,6 +1,6 @@
 import { Sidebar } from "@/components/sidebar";
 import { Toaster } from "@/components/ui/sonner";
-import { GlobalSearch } from "@/components/global-search";
+import { ConditionalGlobalSearch } from "@/components/conditional-global-search";
 import { getSession } from "@/lib/session";
 import { redirect } from "next/navigation";
 import { getNotifications, getUnreadNotificationCount } from "@/app/actions/notifications";
@@ -25,9 +25,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       />
       <main className="flex-1 min-w-0 p-4 md:p-7">
         <div className="max-w-5xl mx-auto space-y-4">
-          <div className="hidden md:block">
-            <GlobalSearch />
-          </div>
+          <ConditionalGlobalSearch />
           {children}
         </div>
       </main>
