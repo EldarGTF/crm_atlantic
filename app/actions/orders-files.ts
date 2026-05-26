@@ -17,24 +17,35 @@ export async function addOrderFile(
   orderId: string,
   type: string,
   file: { name: string; url: string; size: number }
-) {
+): Promise<{ id: string } | { error: string }> {
   await requireRole(ORDERS);
 
   const parsedFile = FileInputSchema.safeParse(file);
-  if (!parsedFile.success) return;
+  if (!parsedFile.success) {
+    return { error: "Некорректные данные файла" };
+  }
 
   const fileType = z.nativeEnum(OrderFileType).safeParse(type);
-  if (!fileType.success) return;
+  if (!fileType.success) {
+    return { error: "Некорректный тип файла" };
+  }
 
-  await prisma.orderFile.create({
+  const created = await prisma.orderFile.create({
     data: { orderId, type: fileType.data, ...parsedFile.data },
   });
   revalidatePath(`/orders/${orderId}`);
+  return { id: created.id };
 }
 
-export async function deleteOrderFile(fileId: string, orderId: string) {
+/** Порядок аргументов для .bind(null, orderId) из страницы заказа. */
+export async function deleteOrderFile(orderId: string, fileId: string) {
   await requireRole(ORDERS);
 
-  await prisma.orderFile.delete({ where: { id: fileId } });
+  try {
+    await prisma.orderFile.delete({ where: { id: fileId, orderId } });
+  } catch {
+    return { error: "Не удалось удалить файл" };
+  }
   revalidatePath(`/orders/${orderId}`);
+  return { ok: true as const };
 }

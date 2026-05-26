@@ -306,7 +306,7 @@ export default async function OrderPage({ params }: Props) {
           folder={`orders/${id}`}
           existingFiles={generalFiles}
           onUpload={canEdit ? addFile : undefined}
-          onDelete={canEdit ? async (fileId) => { "use server"; await deleteOrderFile(fileId, id); } : undefined}
+          onDelete={canEdit ? deleteOrderFile.bind(null, id) : undefined}
         />
       </div>
 

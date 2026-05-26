@@ -122,7 +122,7 @@ export default async function MeasurementPage({ params }: Props) {
           folder={`measurements/${id}`}
           existingFiles={m.files}
           onUpload={addFile}
-          onDelete={async (fileId) => { "use server"; await deleteMeasurementFile(fileId, id); }}
+          onDelete={deleteMeasurementFile.bind(null, id)}
         />
       </div>
     </div>

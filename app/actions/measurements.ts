@@ -157,22 +157,29 @@ export async function rescheduleMeasurement(id: string, scheduledAt: string, add
 export async function addMeasurementFile(
   measurementId: string,
   file: { name: string; url: string; size: number }
-) {
+): Promise<{ id: string } | { error: string }> {
   const session = await requireRole(MEASUREMENTS);
   await assertMeasurementAccess(measurementId, session);
 
-  await prisma.measurementFile.create({
+  const created = await prisma.measurementFile.create({
     data: { measurementId, name: file.name, url: file.url, size: file.size },
   });
   revalidatePath(`/measurements/${measurementId}`);
+  return { id: created.id };
 }
 
-export async function deleteMeasurementFile(fileId: string, measurementId: string) {
+/** Порядок аргументов для .bind(null, measurementId). */
+export async function deleteMeasurementFile(measurementId: string, fileId: string) {
   const session = await requireRole(MEASUREMENTS);
   await assertMeasurementAccess(measurementId, session);
 
-  await prisma.measurementFile.delete({ where: { id: fileId } });
+  try {
+    await prisma.measurementFile.delete({ where: { id: fileId, measurementId } });
+  } catch {
+    return { error: "Не удалось удалить файл" };
+  }
   revalidatePath(`/measurements/${measurementId}`);
+  return { ok: true as const };
 }
 
 export async function getMeasurement(id: string) {

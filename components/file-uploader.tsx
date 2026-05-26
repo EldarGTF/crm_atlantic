@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Camera, Upload, X, File, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -12,8 +12,10 @@ type UploadedFile = { id: string; name: string; url: string; size: number };
 type Props = {
   folder: string;
   existingFiles?: UploadedFile[];
-  onUpload?: (file: { name: string; url: string; size: number }) => Promise<void>;
-  onDelete?: (fileId: string) => Promise<void>;
+  onUpload?: (
+    file: { name: string; url: string; size: number }
+  ) => Promise<{ id: string } | { error: string } | void>;
+  onDelete?: (fileId: string) => Promise<{ error?: string; ok?: true } | void>;
 };
 
 function isImage(name: string) {
@@ -32,6 +34,10 @@ export function FileUploader({ folder, existingFiles = [], onUpload, onDelete }:
   const [uploading, setUploading] = useState(false);
   const [files, setFiles] = useState<UploadedFile[]>(existingFiles);
 
+  useEffect(() => {
+    setFiles(existingFiles);
+  }, [existingFiles]);
+
   async function handleFiles(selected: FileList | null) {
     if (!selected || selected.length === 0 || !onUpload) return;
     setUploading(true);
@@ -43,8 +49,13 @@ export function FileUploader({ folder, existingFiles = [], onUpload, onDelete }:
       }
       try {
         const data = await uploadFileToStorage(file, folder);
-        await onUpload(data);
-        setFiles((prev) => [...prev, { id: Date.now().toString(), ...data }]);
+        const saved = await onUpload(data);
+        if (saved && "error" in saved) {
+          toast.error(saved.error);
+          continue;
+        }
+        const id = saved && "id" in saved ? saved.id : Date.now().toString();
+        setFiles((prev) => [...prev, { id, ...data }]);
         toast.success(`${file.name} загружен`);
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Ошибка загрузки");
@@ -55,8 +66,17 @@ export function FileUploader({ folder, existingFiles = [], onUpload, onDelete }:
 
   async function handleDelete(fileId: string) {
     if (!onDelete) return;
-    await onDelete(fileId);
-    setFiles((prev) => prev.filter((f) => f.id !== fileId));
+    try {
+      const result = await onDelete(fileId);
+      if (result && "error" in result && result.error) {
+        toast.error(result.error);
+        return;
+      }
+      setFiles((prev) => prev.filter((f) => f.id !== fileId));
+      toast.success("Файл удалён");
+    } catch {
+      toast.error("Не удалось удалить файл");
+    }
   }
 
   return (
@@ -129,8 +149,13 @@ export function FileUploader({ folder, existingFiles = [], onUpload, onDelete }:
                 {onDelete && (
                   <button
                     type="button"
-                    onClick={() => handleDelete(f.id)}
-                    className="text-gray-300 hover:text-red-500 ml-1"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      void handleDelete(f.id);
+                    }}
+                    className="text-gray-300 hover:text-red-500 ml-1 shrink-0"
+                    aria-label="Удалить файл"
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>
