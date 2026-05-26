@@ -6,7 +6,7 @@ import { INSTALLATION } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { sendPushToUser } from "@/lib/push";
-import { logOrderActivity } from "@/lib/activity";
+import { recordLeadStatusForOrder, recordOrderStep } from "@/lib/activity";
 import { sendInstallationSms, sendRescheduleSms } from "@/lib/sms";
 
 export async function getInstallations() {
@@ -89,15 +89,14 @@ export async function scheduleInstallation(_state: unknown, formData: FormData) 
     data: { orderId, installerId, scheduledAt: new Date(scheduledAt), address, notes },
   });
 
-  await prisma.lead.update({
-    where: { id: order.leadId },
-    data: {
-      status: "INSTALLATION_SCHEDULED",
-      statusHistory: { create: { status: "INSTALLATION_SCHEDULED", note: `Монтаж назначен — ${installer?.name ?? ""}`, userId: session.userId } },
-    },
-  });
-
-  await logOrderActivity(orderId, session.userId, `Монтаж назначен — ${installer?.name ?? ""}`);
+  const scheduleNote = `Монтаж назначен — ${installer?.name ?? ""}`;
+  await recordLeadStatusForOrder(
+    order.leadId,
+    orderId,
+    session.userId,
+    "INSTALLATION_SCHEDULED",
+    scheduleNote
+  );
 
   if (order.lead.client.phone) {
     sendInstallationSms(
@@ -134,10 +133,7 @@ export async function rescheduleInstallation(id: string, scheduledAt: string) {
   });
 
   if (inst) {
-    await logOrderActivity(inst.orderId, session.userId, "Дата монтажа перенесена");
-    await prisma.leadHistory.create({
-      data: { leadId: inst.order.leadId, status: "INSTALLATION_SCHEDULED", note: "Дата монтажа перенесена", userId: session.userId },
-    });
+    await recordOrderStep(inst.orderId, session.userId, "Дата монтажа перенесена");
     revalidatePath(`/leads/${inst.order.leadId}`);
     const client = inst.order.lead.client;
     if (client.phone) {
@@ -164,10 +160,7 @@ export async function takeInstallationInWork(installationId: string) {
     if (session.role === "INSTALLER" && inst.installerId !== session.userId) {
       redirect("/installation");
     }
-    await logOrderActivity(inst.orderId, session.userId, "Монтаж взят в работу");
-    await prisma.leadHistory.create({
-      data: { leadId: inst.order.leadId, status: "INSTALLATION_SCHEDULED", note: "Монтаж взят в работу", userId: session.userId },
-    });
+    await recordOrderStep(inst.orderId, session.userId, "Монтаж взят в работу");
     revalidatePath(`/leads/${inst.order.leadId}`);
   }
 
@@ -182,15 +175,7 @@ export async function markInstallationDone(installationId: string, orderId: stri
     data: { doneAt: new Date() },
   });
 
-  await prisma.lead.update({
-    where: { id: leadId },
-    data: {
-      status: "INSTALLED",
-      statusHistory: { create: { status: "INSTALLED", note: "Монтаж выполнен", userId: session.userId } },
-    },
-  });
-
-  await logOrderActivity(orderId, session.userId, "Монтаж выполнен");
+  await recordLeadStatusForOrder(leadId, orderId, session.userId, "INSTALLED", "Монтаж выполнен");
 
   revalidatePath("/installation");
   revalidatePath(`/orders/${orderId}`);

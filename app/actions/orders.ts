@@ -7,7 +7,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { sendPushToRole } from "@/lib/push";
-import { logOrderActivity } from "@/lib/activity";
+import { logOrderActivity, recordLeadStatusForOrder } from "@/lib/activity";
 import { PaymentSchema } from "@/lib/definitions";
 import { getPrismaUserMessage } from "@/lib/prisma-errors";
 
@@ -99,15 +99,7 @@ export async function createOrder(_state: unknown, formData: FormData) {
       },
     });
 
-    await prisma.lead.update({
-      where: { id: leadId },
-      data: {
-        status: "AGREED",
-        statusHistory: { create: { status: "AGREED", note: "Заказ создан", userId: session.userId } },
-      },
-    });
-
-    await logOrderActivity(order.id, session.userId, "Заказ создан");
+    await recordLeadStatusForOrder(leadId, order.id, session.userId, "AGREED", "Заказ создан");
 
     revalidatePath(`/leads/${leadId}`);
     redirect(`/orders/${order.id}`);
@@ -181,15 +173,13 @@ export async function signAct(
     });
   }
 
-  await prisma.lead.update({
-    where: { id: leadId },
-    data: {
-      status: "ACT_SIGNED",
-      statusHistory: { create: { status: "ACT_SIGNED", note: "Акт выполненных работ подписан", userId: session.userId } },
-    },
-  });
-
-  await logOrderActivity(orderId, session.userId, "Акт выполненных работ подписан");
+  await recordLeadStatusForOrder(
+    leadId,
+    orderId,
+    session.userId,
+    "ACT_SIGNED",
+    "Акт выполненных работ подписан"
+  );
 
   revalidatePath(`/orders/${orderId}`);
   revalidatePath(`/leads/${leadId}`);
@@ -199,16 +189,14 @@ export async function archiveOrder(orderId: string, leadId: string) {
   const session = await requireRole(MANAGEMENT);
 
   await prisma.order.update({ where: { id: orderId }, data: { archived: true } });
-  await prisma.lead.update({
-    where: { id: leadId },
-    data: {
-      archived: true,
-      status: "CLOSED",
-      statusHistory: { create: { status: "CLOSED", note: "Сделка закрыта", userId: session.userId } },
-    },
-  });
-
-  await logOrderActivity(orderId, session.userId, "Сделка закрыта, заказ перемещён в архив");
+  await prisma.lead.update({ where: { id: leadId }, data: { archived: true } });
+  await recordLeadStatusForOrder(
+    leadId,
+    orderId,
+    session.userId,
+    "CLOSED",
+    "Сделка закрыта, заказ перемещён в архив"
+  );
 
   revalidatePath(`/orders/${orderId}`);
   redirect("/leads");
@@ -239,15 +227,13 @@ export async function sendToProduction(
     });
   }
 
-  await prisma.lead.update({
-    where: { id: leadId },
-    data: {
-      status: "SENT_TO_PRODUCTION",
-      statusHistory: { create: { status: "SENT_TO_PRODUCTION", note: `Отправлен в производство — ${deptLabels}`, userId: session.userId } },
-    },
-  });
-
-  await logOrderActivity(orderId, session.userId, `Отправлен в производство — ${deptLabels}`);
+  await recordLeadStatusForOrder(
+    leadId,
+    orderId,
+    session.userId,
+    "SENT_TO_PRODUCTION",
+    `Отправлен в производство — ${deptLabels}`
+  );
 
   const deptRoleMap: Record<string, string> = {
     GLASS: "PRODUCTION_GLASS",

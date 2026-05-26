@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, CheckCircle, Package, Wrench, HardHat, Calendar, MapPin, User, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { LEAD_STATUS_LABELS } from "@/lib/lead-constants";
+import { buildOrderTimeline } from "@/lib/order-timeline";
 import { ru } from "date-fns/locale";
 import { PaymentForm } from "@/components/orders/payment-form";
 import { OrderActions } from "@/components/orders/order-actions";
@@ -320,25 +321,7 @@ export default async function OrderPage({ params }: Props) {
 
       {/* История — объединённая лента заявки и заказа */}
       {!isProduction && (() => {
-        const leadEvents = order.lead.statusHistory.map((h) => ({
-          id: `lead-${h.id}`,
-          createdAt: new Date(h.createdAt),
-          label: LEAD_STATUS_LABELS[h.status] ?? h.status,
-          note: h.note ?? null,
-          userName: h.user?.name ?? null,
-          isStatus: true,
-        }));
-        const orderEvents = order.activities.map((a) => ({
-          id: `order-${a.id}`,
-          createdAt: new Date(a.createdAt),
-          label: a.action,
-          note: null,
-          userName: a.user.name,
-          isStatus: false,
-        }));
-        const timeline = [...leadEvents, ...orderEvents].sort(
-          (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
-        );
+        const timeline = buildOrderTimeline(order);
         if (timeline.length === 0) return null;
         return (
           <div className="bg-white rounded-lg border">
@@ -350,10 +333,9 @@ export default async function OrderPage({ params }: Props) {
             <div className="divide-y">
               {timeline.map((e) => (
                 <div key={e.id} className="px-4 py-3 flex items-start gap-3">
-                  <div className={`w-1.5 h-1.5 rounded-full mt-2 shrink-0 ${e.isStatus ? "bg-blue-300" : "bg-slate-300"}`} />
+                  <div className="w-1.5 h-1.5 rounded-full mt-2 shrink-0 bg-slate-300" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-slate-700">{e.label}</p>
-                    {e.note && <p className="text-xs text-slate-500 mt-0.5">{e.note}</p>}
+                    <p className="text-sm text-slate-700">{e.title}</p>
                     <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                       {e.userName && (
                         <span className="text-xs font-medium text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
