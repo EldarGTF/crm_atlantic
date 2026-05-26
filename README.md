@@ -71,7 +71,7 @@ npm run dev
 
 - В production задайте сильный `SESSION_SECRET`
 - Не коммитьте `.env`
-- Загрузка файлов: только разрешённые MIME и папки (`app/api/upload`)
+- Загрузка файлов: напрямую в Supabase (signed URL), до 20 МБ — не через тело Vercel
 - Rate limit на логин: 5 попыток / 15 мин на пару IP+email (in-memory; для нескольких инстансов нужен Redis)
 
 ## CI

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { sendToProduction } from "@/app/actions/orders";
 import { Wrench, Upload, Camera, CheckCircle, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
+import { uploadFileToStorage } from "@/lib/upload-client";
 
 const PRODUCTION_STATUSES = new Set([
   "SENT_TO_PRODUCTION", "IN_PRODUCTION", "READY_FOR_INSTALLATION",
@@ -41,14 +42,13 @@ function InlineUpload({
     if (!file) return;
     if (file.size > 20 * 1024 * 1024) { toast.error("Файл больше 20 МБ"); return; }
     setUploading(true);
-    const fd = new FormData();
-    fd.append("file", file);
-    fd.append("folder", `orders/${orderId}`);
-    const res = await fetch("/api/upload", { method: "POST", body: fd });
-    if (!res.ok) { toast.error("Ошибка загрузки"); setUploading(false); return; }
-    const data = await res.json();
-    setUploaded({ name: data.name });
-    onUploaded({ type: fileType, name: data.name, url: data.url, size: data.size });
+    try {
+      const data = await uploadFileToStorage(file, `orders/${orderId}`);
+      setUploaded({ name: data.name });
+      onUploaded({ type: fileType, name: data.name, url: data.url, size: data.size });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Ошибка загрузки");
+    }
     setUploading(false);
   }
 

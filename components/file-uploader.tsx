@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Camera, Upload, X, File, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import Image from "next/image";
+import { uploadFileToStorage } from "@/lib/upload-client";
 
 type UploadedFile = { id: string; name: string; url: string; size: number };
 
@@ -40,17 +41,14 @@ export function FileUploader({ folder, existingFiles = [], onUpload, onDelete }:
         toast.error(`${file.name}: файл больше 20 МБ`);
         continue;
       }
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("folder", folder);
-
-      const res = await fetch("/api/upload", { method: "POST", body: fd });
-      if (!res.ok) { toast.error("Ошибка загрузки"); continue; }
-
-      const data = await res.json();
-      await onUpload(data);
-      setFiles((prev) => [...prev, { id: Date.now().toString(), ...data }]);
-      toast.success(`${file.name} загружен`);
+      try {
+        const data = await uploadFileToStorage(file, folder);
+        await onUpload(data);
+        setFiles((prev) => [...prev, { id: Date.now().toString(), ...data }]);
+        toast.success(`${file.name} загружен`);
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Ошибка загрузки");
+      }
     }
     setUploading(false);
   }
