@@ -1,13 +1,9 @@
-import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
-import {
-  UPLOAD_BUCKET,
-  MAX_UPLOAD_BYTES,
-  buildUploadPath,
-} from "@/lib/upload-policy";
+import { MAX_UPLOAD_BYTES, buildUploadPath } from "@/lib/upload-policy";
+import { createUploadSignature } from "@/lib/storage-server";
 
 const SignSchema = z.object({
   folder: z.string().min(1),
@@ -17,12 +13,6 @@ const SignSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !serviceKey) {
-    return NextResponse.json({ error: "Хранилище не настроено (Supabase)" }, { status: 503 });
-  }
-
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -52,24 +42,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: built.error }, { status: 400 });
   }
 
-  const supabase = createClient(url, serviceKey);
-  const { data, error } = await supabase.storage
-    .from(UPLOAD_BUCKET)
-    .createSignedUploadUrl(built.path);
-
-  if (error || !data) {
-    console.error("[upload/sign]", error?.message);
-    return NextResponse.json({ error: error?.message ?? "Не удалось подготовить загрузку" }, { status: 500 });
+  const signed = await createUploadSignature(built.path, built.mime);
+  if ("error" in signed) {
+    return NextResponse.json({ error: signed.error }, { status: 500 });
   }
 
-  const { data: publicData } = supabase.storage.from(UPLOAD_BUCKET).getPublicUrl(built.path);
-
   return NextResponse.json({
-    path: data.path,
-    token: data.token,
-    signedUrl: data.signedUrl,
-    publicUrl: publicData.publicUrl,
-    contentType: built.mime,
+    provider: signed.provider,
+    path: signed.path,
+    token: signed.token,
+    signedUrl: signed.signedUrl,
+    publicUrl: signed.publicUrl,
+    contentType: signed.contentType,
     name: fileName,
     size: fileSize,
   });

@@ -10,7 +10,16 @@ CRM для оконной компании: заявки, клиенты, зак
 - PostgreSQL 15+
 - Аккаунты Supabase и Mobizon (опционально для SMS)
 
-## Быстрый старт
+## VPS в Казахстане (рекомендуется для KZ)
+
+Полная инструкция: **[docs/DEPLOY-VPS-KZ.md](docs/DEPLOY-VPS-KZ.md)** — Docker, PostgreSQL, MinIO, Nginx на одном сервере.
+
+```bash
+cp .env.vps.example .env
+docker compose up -d --build
+```
+
+## Быстрый старт (разработка)
 
 ```bash
 git clone https://github.com/EldarGTF/crm_atlantic.git

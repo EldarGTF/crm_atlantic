@@ -1,5 +1,5 @@
 /**
- * Прямая загрузка в Supabase Storage (минуя лимит тела Vercel ~4.5 MB).
+ * Прямая загрузка в хранилище (S3/MinIO или Supabase), без прокси через Node.
  */
 export async function uploadFileToStorage(
   file: File,
@@ -25,18 +25,26 @@ export async function uploadFileToStorage(
     throw new Error("Некорректный ответ сервера загрузки");
   }
 
-  // Supabase signed upload ожидает multipart FormData (как в @supabase/storage-js)
-  const body = new FormData();
-  body.append("cacheControl", "3600");
-  body.append("", file);
+  let putRes: Response;
 
-  const putRes = await fetch(signData.signedUrl, {
-    method: "PUT",
-    headers: {
-      "x-upsert": "false",
-    },
-    body,
-  });
+  if (signData.provider === "s3") {
+    putRes = await fetch(signData.signedUrl, {
+      method: "PUT",
+      headers: {
+        "Content-Type": signData.contentType || file.type || "application/octet-stream",
+      },
+      body: file,
+    });
+  } else {
+    const body = new FormData();
+    body.append("cacheControl", "3600");
+    body.append("", file);
+    putRes = await fetch(signData.signedUrl, {
+      method: "PUT",
+      headers: { "x-upsert": "false" },
+      body,
+    });
+  }
 
   if (!putRes.ok) {
     let message = `Ошибка загрузки (${putRes.status})`;
