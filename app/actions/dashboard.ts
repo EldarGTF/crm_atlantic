@@ -18,6 +18,8 @@ export async function getDashboardStats() {
   const [
     newLeadsMonth,
     newLeadsLastMonth,
+    ordersMonth,
+    ordersLastMonth,
     activeOrders,
     clientsTotal,
     todayTasks,
@@ -35,6 +37,12 @@ export async function getDashboardStats() {
 
     // Новые заявки за прошлый месяц
     prisma.lead.count({ where: { createdAt: { gte: lastMonthStart, lte: lastMonthEnd } } }),
+
+    // Новые заказы за этот месяц
+    prisma.order.count({ where: { createdAt: { gte: monthStart, lte: monthEnd }, archived: false } }),
+
+    // Новые заказы за прошлый месяц
+    prisma.order.count({ where: { createdAt: { gte: lastMonthStart, lte: lastMonthEnd }, archived: false } }),
 
     // Активных заказов
     prisma.order.count({ where: { archived: false, act: null } }),
@@ -108,12 +116,22 @@ export async function getDashboardStats() {
     newLeadsLastMonth > 0
       ? Math.round(((newLeadsMonth - newLeadsLastMonth) / newLeadsLastMonth) * 100)
       : null;
+  const ordersGrowth =
+    ordersLastMonth > 0 ? Math.round(((ordersMonth - ordersLastMonth) / ordersLastMonth) * 100) : null;
+  const leadToOrderConversion = newLeadsMonth > 0 ? Math.round((ordersMonth / newLeadsMonth) * 100) : null;
+  const avgOrderRevenue = ordersMonth > 0 ? Math.round(revenueNow / ordersMonth) : null;
+  const productionLoad = activeOrders > 0 ? Math.round((production / activeOrders) * 100) : null;
 
   const pipeline = Object.fromEntries(pipelineByStatus.map((r) => [r.status, r._count._all]));
 
   return {
     newLeadsMonth,
     leadsGrowth,
+    ordersMonth,
+    ordersGrowth,
+    leadToOrderConversion,
+    avgOrderRevenue,
+    productionLoad,
     activeOrders,
     clientsTotal,
     todayTasks,

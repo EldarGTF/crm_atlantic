@@ -51,8 +51,8 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: "Заявок в месяц",   value: stats.newLeadsMonth, growth: stats.leadsGrowth,  icon: FileText,   color: "#2563EB", bg: "#EFF6FF" },
+          { label: "Заказов в месяц",  value: stats.ordersMonth, growth: stats.ordersGrowth, icon: Package, color: "#D97706", bg: "#FFFBEB" },
           { label: "Выручка (месяц)",  value: stats.revenueNow > 0 ? `${stats.revenueNow.toLocaleString("ru-RU")} ₸` : "—", growth: stats.revenueGrowth, icon: TrendingUp, color: "#059669", bg: "#ECFDF5" },
-          { label: "Активных заказов", value: stats.activeOrders,   icon: Package,    color: "#D97706", bg: "#FFFBEB" },
           { label: "Всего клиентов",   value: stats.clientsTotal,   icon: Users,      color: "#7C3AED", bg: "#F5F3FF" },
         ].map(({ label, value, growth, icon: Icon, color, bg }) => (
           <div key={label} className="stat-card">
@@ -66,6 +66,31 @@ export default async function DashboardPage() {
             {growth !== undefined && <GrowthBadge value={growth ?? null} />}
           </div>
         ))}
+      </div>
+
+      {/* KPI месяца */}
+      <div className="card p-4">
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <h2 className="font-semibold text-slate-800">KPI месяца</h2>
+          <span className="text-xs text-slate-500">Обновляется автоматически</span>
+        </div>
+        <div className="grid sm:grid-cols-3 gap-2.5">
+          <MetricPill
+            label="Конверсия заявка -> заказ"
+            value={stats.leadToOrderConversion !== null ? `${stats.leadToOrderConversion}%` : "—"}
+            tone="blue"
+          />
+          <MetricPill
+            label="Средний чек на заказ"
+            value={stats.avgOrderRevenue !== null ? `${stats.avgOrderRevenue.toLocaleString("ru-RU")} ₸` : "—"}
+            tone="green"
+          />
+          <MetricPill
+            label="Загрузка производства"
+            value={stats.productionLoad !== null ? `${stats.productionLoad}%` : "—"}
+            tone="amber"
+          />
+        </div>
       </div>
 
       {/* Предупреждения */}
@@ -183,6 +208,30 @@ export default async function DashboardPage() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function MetricPill({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone: "blue" | "green" | "amber";
+}) {
+  const toneClass =
+    tone === "green"
+      ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+      : tone === "amber"
+        ? "bg-amber-50 border-amber-200 text-amber-700"
+        : "bg-blue-50 border-blue-200 text-blue-700";
+
+  return (
+    <div className={`rounded-lg border px-3 py-2 ${toneClass}`}>
+      <div className="text-[11px] font-medium opacity-80">{label}</div>
+      <div className="text-lg font-bold tracking-tight mt-0.5">{value}</div>
     </div>
   );
 }
