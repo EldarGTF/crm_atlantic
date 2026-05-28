@@ -19,10 +19,15 @@ export type CalendarEvent = {
 export async function getCalendarEvents(from: Date, to: Date): Promise<CalendarEvent[]> {
   const session = await requireSession();
   const events: CalendarEvent[] = [];
+  const isMeasurerOnly = session.role === "MEASURER";
+  const isInstallerOnly = session.role === "INSTALLER";
 
   if (hasRole(session.role, MEASUREMENTS)) {
     const measurements = await prisma.measurement.findMany({
-      where: { scheduledAt: { gte: from, lte: to } },
+      where: {
+        scheduledAt: { gte: from, lte: to },
+        ...(isMeasurerOnly ? { measurerId: session.userId } : {}),
+      },
       include: {
         lead: { include: { client: { select: { name: true, phone: true } } } },
       },
@@ -43,7 +48,10 @@ export async function getCalendarEvents(from: Date, to: Date): Promise<CalendarE
 
   if (hasRole(session.role, INSTALLATION)) {
     const installations = await prisma.installation.findMany({
-      where: { scheduledAt: { gte: from, lte: to } },
+      where: {
+        scheduledAt: { gte: from, lte: to },
+        ...(isInstallerOnly ? { installerId: session.userId } : {}),
+      },
       include: {
         order: {
           include: {
