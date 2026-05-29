@@ -2,7 +2,9 @@
 
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth-guards";
-import { LEADS } from "@/lib/permissions";
+import { LEADS, STAFF_ADMIN } from "@/lib/permissions";
+import { removeOrderFromDbAndStorage } from "@/lib/delete-order";
+import { deleteStoredFileByUrl } from "@/lib/storage-object";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -146,4 +148,44 @@ export async function getClientsForSelect() {
     select: { id: true, name: true, phone: true },
     orderBy: { name: "asc" },
   });
+}
+
+export async function deleteLead(leadId: string): Promise<{ error?: string }> {
+  await requireRole(STAFF_ADMIN);
+
+  const lead = await prisma.lead.findUnique({
+    where: { id: leadId },
+    include: {
+      order: { select: { id: true } },
+      measurements: { include: { files: { select: { url: true } } } },
+    },
+  });
+  if (!lead) return { error: "Заявка не найдена" };
+
+  if (lead.order) {
+    const orderResult = await removeOrderFromDbAndStorage(lead.order.id);
+    if ("error" in orderResult) return { error: orderResult.error };
+  }
+
+  for (const m of lead.measurements) {
+    for (const f of m.files) {
+      await deleteStoredFileByUrl(f.url).catch(() => {});
+    }
+  }
+
+  const measurementIds = lead.measurements.map((m) => m.id);
+
+  await prisma.$transaction(async (tx) => {
+    await tx.task.updateMany({ where: { leadId }, data: { leadId: null } });
+    if (measurementIds.length > 0) {
+      await tx.measurementFile.deleteMany({ where: { measurementId: { in: measurementIds } } });
+      await tx.measurement.deleteMany({ where: { leadId } });
+    }
+    await tx.lead.delete({ where: { id: leadId } });
+  });
+
+  revalidatePath("/leads");
+  revalidatePath("/orders");
+  revalidatePath("/archive");
+  redirect("/leads");
 }

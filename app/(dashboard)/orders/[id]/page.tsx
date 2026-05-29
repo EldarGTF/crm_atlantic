@@ -2,7 +2,9 @@
 import { notFound } from "next/navigation";
 import { getOrder, addPayment } from "@/app/actions/orders";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, CheckCircle, Package, Wrench, HardHat, Calendar, MapPin, User, Clock } from "lucide-react";
+import {
+  ChevronLeft, CheckCircle, Package, Wrench, HardHat, Calendar, MapPin, User, Clock, Phone,
+} from "lucide-react";
 import { format } from "date-fns";
 import { LEAD_STATUS_LABELS } from "@/lib/lead-constants";
 import { buildOrderTimeline } from "@/lib/order-timeline";
@@ -17,6 +19,7 @@ import { WarrantySection } from "@/components/orders/warranty-section";
 import { formatOrderNumber } from "@/lib/order-number";
 import { InstallationChecklist } from "@/components/installation/installation-checklist";
 import { parseChecklist } from "@/lib/installation-checklist";
+import { DeleteOrderButton } from "@/components/admin/delete-order-button";
 
 const PAYMENT_STATUS = { UNPAID: "Не оплачен", PREPAID: "Предоплата", PAID: "Оплачен" };
 const PAYMENT_STATUS_COLORS = { UNPAID: "destructive", PREPAID: "default", PAID: "secondary" } as const;
@@ -35,6 +38,7 @@ export default async function OrderPage({ params }: Props) {
   const isProduction = PRODUCTION_ROLES.has(role);
   const isEconomist = role === "ECONOMIST";
   const canEdit = !isEconomist;
+  const isAdmin = role === "ADMIN";
 
   // Файлы нарядов: каждый цех видит только свой наряд
   const WORK_ORDER_TYPES: Record<string, string> = {
@@ -60,6 +64,12 @@ export default async function OrderPage({ params }: Props) {
   const addPaymentAction = addPayment.bind(null, id);
   const addFile = addOrderFile.bind(null, id, "DOCUMENT");
 
+  const siteAddress =
+    order.installation?.address ??
+    order.lead.measurements[0]?.address ??
+    order.lead.client.address ??
+    null;
+
   return (
     <div className="space-y-5 max-w-3xl">
       <div>
@@ -71,12 +81,39 @@ export default async function OrderPage({ params }: Props) {
         </Link>
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <h1 className="text-2xl font-bold text-gray-900">Заказ {formatOrderNumber(order.number)}</h1>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Badge variant={PAYMENT_STATUS_COLORS[order.paymentStatus]}>
               {PAYMENT_STATUS[order.paymentStatus]}
             </Badge>
             {order.act && <Badge variant="secondary">Акт подписан</Badge>}
+            {isAdmin && <DeleteOrderButton orderId={id} />}
           </div>
+        </div>
+        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500">
+          <span className="flex items-center gap-1">
+            <Phone className="h-3.5 w-3.5 shrink-0" />
+            <a href={`tel:${order.lead.client.phone}`} className="hover:text-blue-600">
+              {order.lead.client.phone}
+            </a>
+          </span>
+          {siteAddress ? (
+            <span className="flex items-center gap-1 min-w-0">
+              <MapPin className="h-3.5 w-3.5 shrink-0" />
+              <a
+                href={`https://maps.google.com/?q=${encodeURIComponent(siteAddress)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-blue-600 truncate"
+              >
+                {siteAddress}
+              </a>
+            </span>
+          ) : (
+            <span className="flex items-center gap-1 text-gray-400">
+              <MapPin className="h-3.5 w-3.5 shrink-0" />
+              Адрес не указан
+            </span>
+          )}
         </div>
       </div>
 

@@ -2,7 +2,8 @@
 
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth-guards";
-import { MANAGEMENT, ORDERS } from "@/lib/permissions";
+import { MANAGEMENT, ORDERS, STAFF_ADMIN } from "@/lib/permissions";
+import { removeOrderFromDbAndStorage } from "@/lib/delete-order";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -194,6 +195,17 @@ export async function signAct(
   revalidatePath(`/leads/${leadId}`);
 }
 
+export async function deleteOrder(orderId: string): Promise<{ error?: string }> {
+  await requireRole(STAFF_ADMIN);
+
+  const result = await removeOrderFromDbAndStorage(orderId);
+  if ("error" in result) return { error: result.error };
+
+  revalidatePath("/orders");
+  revalidatePath("/leads");
+  redirect("/orders");
+}
+
 export async function archiveOrder(orderId: string, leadId: string) {
   const session = await requireRole(MANAGEMENT);
 
@@ -314,6 +326,11 @@ export async function getOrder(id: string) {
       lead: {
         include: {
           client: true,
+          measurements: {
+            orderBy: { scheduledAt: "desc" },
+            take: 1,
+            select: { address: true },
+          },
           statusHistory: {
             orderBy: { createdAt: "asc" },
             include: { user: { select: { name: true } } },

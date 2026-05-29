@@ -10,6 +10,7 @@ import { LEAD_STATUS_LABELS, LEAD_SOURCE_LABELS } from "@/lib/lead-constants";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { getSession } from "@/lib/session";
+import { DeleteLeadButton } from "@/components/admin/delete-lead-button";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -18,6 +19,7 @@ export default async function LeadPage({ params }: Props) {
   const [lead, session] = await Promise.all([getLead(id), getSession()]);
   if (!lead) notFound();
   const canEdit = session?.role !== "ECONOMIST";
+  const isAdmin = session?.role === "ADMIN";
 
   return (
     <div className="space-y-5 max-w-3xl">
@@ -46,9 +48,12 @@ export default async function LeadPage({ params }: Props) {
               <Badge variant="outline">{LEAD_SOURCE_LABELS[lead.source]}</Badge>
             </div>
           </div>
-          <LinkButton href={`/clients/${lead.clientId}`} variant="outline" size="sm">
-            Карточка клиента
-          </LinkButton>
+          <div className="flex items-center gap-2 flex-wrap">
+            <LinkButton href={`/clients/${lead.clientId}`} variant="outline" size="sm">
+              Карточка клиента
+            </LinkButton>
+            {isAdmin && <DeleteLeadButton leadId={lead.id} hasOrder={!!lead.order} />}
+          </div>
         </div>
       </div>
 
