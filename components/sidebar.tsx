@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Users, FileText, Ruler, Package,
   Wrench, Archive, CheckSquare, HardHat, UserCog, LogOut, Menu, X, BarChart3, CalendarCheck, ShieldCheck, CalendarDays,
+  BookOpen,
 } from "lucide-react";
 import { NotificationsBell } from "@/components/notifications-bell";
 import { useState } from "react";
@@ -42,6 +43,12 @@ const navGroups = [
       { href: "/warranty",     label: "Гарантия",      icon: ShieldCheck,     roles: ["ADMIN", "MANAGER", "ECONOMIST"] },
       { href: "/archive",      label: "Архив",         icon: Archive,         roles: ["ADMIN", "MANAGER", "ECONOMIST"] },
       { href: "/staff",        label: "Сотрудники",    icon: UserCog,         roles: ["ADMIN"] },
+    ],
+  },
+  {
+    label: "Помощь",
+    items: [
+      { href: "/instructions", label: "Инструкция", icon: BookOpen, roles: ALL_ROLES },
     ],
   },
 ];

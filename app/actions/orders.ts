@@ -147,7 +147,12 @@ export async function addPayment(orderId: string, _state: unknown, formData: For
   });
 
   const PAYMENT_TYPE_LABELS: Record<string, string> = { PREPAYMENT: "Предоплата", FINAL: "Остаток", OTHER: "Другое" };
-  await logOrderActivity(orderId, session.userId, `Оплата ${amount.toLocaleString("ru")} ₸ — ${PAYMENT_TYPE_LABELS[type] ?? type}`);
+  const notePart = notes?.trim() ? ` (${notes.trim()})` : "";
+  await logOrderActivity(
+    orderId,
+    session.userId,
+    `Оплата ${amount.toLocaleString("ru")} ₸ — ${PAYMENT_TYPE_LABELS[type] ?? type}${notePart}`
+  );
 
   revalidatePath(`/orders/${orderId}`);
 }

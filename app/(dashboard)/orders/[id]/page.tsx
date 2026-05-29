@@ -215,15 +215,20 @@ export default async function OrderPage({ params }: Props) {
           {order.payments.length > 0 && (
             <div className="border-t divide-y">
               {order.payments.map((p) => (
-                <div key={p.id} className="px-4 py-2 flex justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-3.5 w-3.5 text-green-500" />
-                    <span>{PAYMENT_TYPE[p.type]}</span>
-                    <span className="text-gray-400">
-                      {format(new Date(p.paidAt), "d MMM yyyy", { locale: ru })}
-                    </span>
+                <div key={p.id} className="px-4 py-2.5 flex justify-between gap-3 text-sm">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <CheckCircle className="h-3.5 w-3.5 text-green-500 shrink-0" />
+                      <span className="font-medium">{PAYMENT_TYPE[p.type]}</span>
+                      <span className="text-gray-400">
+                        {format(new Date(p.paidAt), "d MMM yyyy", { locale: ru })}
+                      </span>
+                    </div>
+                    {p.notes && (
+                      <p className="text-gray-500 text-xs mt-1 pl-5">{p.notes}</p>
+                    )}
                   </div>
-                  <span className="font-medium">{Number(p.amount).toLocaleString("ru-RU")} ₸</span>
+                  <span className="font-medium shrink-0">{Number(p.amount).toLocaleString("ru-RU")} ₸</span>
                 </div>
               ))}
             </div>
