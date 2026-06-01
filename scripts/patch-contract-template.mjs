@@ -12,19 +12,10 @@ function mergeBrokenPlaceholders(xml) {
   let prev = "";
   let out = xml;
   const re =
-    /<w:t[^>]*>\{<\/w:t><\/w:r>(?:<w:proofErr[^/]*\/>)?(?:<w:r[^>]*>(?:<w:rPr>[\s\S]*?<\/w:rPr>)?<w:t[^>]*>([^<]*)<\/w:t><\/w:r>)+(?:<w:proofErr[^/]*\/>)?<w:r[^>]*>(?:<w:rPr>[\s\S]*?<\/w:rPr>)?<w:t[^>]*>\}<\/w:t>/g;
+    /<w:t>\{<\/w:t><\/w:r>(?:<w:proofErr[^/]*\/>)?<w:r[^>]*>(?:<w:rPr>[\s\S]*?<\/w:rPr>)?<w:t>([^<]+)<\/w:t><\/w:r>(?:<w:proofErr[^/]*\/>)?<w:r[^>]*>(?:<w:rPr>[\s\S]*?<\/w:rPr>)?<w:t>\}<\/w:t>/g;
   while (out !== prev) {
     prev = out;
-    out = out.replace(re, () => `<w:t>{PLACEHOLDER}</w:t>`);
-  }
-  // second pass with names - simpler iterative
-  prev = "";
-  while (out !== prev) {
-    prev = out;
-    out = out.replace(
-      /<w:t>\{<\/w:t><\/w:r><w:proofErr w:type="spellStart"\/><w:r[^>]*><w:rPr>[\s\S]*?<\/w:rPr><w:t>([^<]+)<\/w:t><\/w:r><w:proofErr w:type="spellEnd"\/><w:r[^>]*><w:rPr>[\s\S]*?<\/w:rPr><w:t>\}<\/w:t>/g,
-      "<w:t>{$1}</w:t>",
-    );
+    out = out.replace(re, "<w:t>{$1}</w:t>");
   }
   return out;
 }

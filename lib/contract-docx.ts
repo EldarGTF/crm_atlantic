@@ -15,14 +15,15 @@ import type { ContractPayload } from "@/lib/contract-types";
 
 const TEMPLATE_PATH = path.join(process.cwd(), "templates/contracts/atlantic-subcontract.docx");
 
+/** Склеивает разорванные Word-теги вида { + name + } в один w:t. */
 function mergeBrokenPlaceholders(xml: string): string {
   let prev = "";
   let out = xml;
   const re =
-    /<w:t[^>]*>\{<\/w:t><\/w:r>(?:<w:proofErr[^/]*\/>)?(?:<w:r[^>]*>(?:<w:rPr>[\s\S]*?<\/w:rPr>)?<w:t[^>]*>([^<]*)<\/w:t><\/w:r>)+(?:<w:proofErr[^/]*\/>)?<w:r[^>]*>(?:<w:rPr>[\s\S]*?<\/w:rPr>)?<w:t[^>]*>\}<\/w:t>/g;
+    /<w:t>\{<\/w:t><\/w:r>(?:<w:proofErr[^/]*\/>)?<w:r[^>]*>(?:<w:rPr>[\s\S]*?<\/w:rPr>)?<w:t>([^<]+)<\/w:t><\/w:r>(?:<w:proofErr[^/]*\/>)?<w:r[^>]*>(?:<w:rPr>[\s\S]*?<\/w:rPr>)?<w:t>\}<\/w:t>/g;
   while (out !== prev) {
     prev = out;
-    out = out.replace(re, (_m, name) => `<w:t>{${name}}</w:t>`);
+    out = out.replace(re, "<w:t>{$1}</w:t>");
   }
   return out;
 }
