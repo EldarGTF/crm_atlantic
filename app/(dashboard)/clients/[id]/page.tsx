@@ -12,13 +12,17 @@ import { Separator } from "@/components/ui/separator";
 import { LinkButton } from "@/components/ui/link-button";
 import { ChevronLeft, Phone, Mail, MapPin, Plus, Pencil } from "lucide-react";
 import { LEAD_STATUS_LABELS, LEAD_STATUS_COLORS } from "@/lib/lead-constants";
+import { getSession } from "@/lib/session";
+import { DeleteClientButton } from "@/components/admin/delete-client-button";
 
 type Props = { params: Promise<{ id: string }> };
 
 export default async function ClientPage({ params }: Props) {
   const { id } = await params;
-  const client = await getClient(id);
+  const [client, session] = await Promise.all([getClient(id), getSession()]);
   if (!client) notFound();
+  const isAdmin = session?.role === "ADMIN";
+  const ordersCount = client.leads.filter((l) => l.order).length;
 
   return (
     <div className="space-y-5 max-w-3xl">
@@ -37,9 +41,18 @@ export default async function ClientPage({ params }: Props) {
               {clientStatusLabel(client.status)}
             </Badge>
           </div>
-          <LinkButton href={`/clients/${id}/edit`} variant="outline" size="sm">
-            <Pencil className="h-3.5 w-3.5 mr-1" /> Редактировать
-          </LinkButton>
+          <div className="flex items-center gap-2 flex-wrap">
+            <LinkButton href={`/clients/${id}/edit`} variant="outline" size="sm">
+              <Pencil className="h-3.5 w-3.5 mr-1" /> Редактировать
+            </LinkButton>
+            {isAdmin && (
+              <DeleteClientButton
+                clientId={id}
+                leadsCount={client.leads.length}
+                ordersCount={ordersCount}
+              />
+            )}
+          </div>
         </div>
       </div>
 

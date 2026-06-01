@@ -337,6 +337,7 @@ model Payment {
 
 enum OrderFileType {
   DOCUMENT
+  CONTRACT
   PRODUCTION
   INSTALLATION
   OTHER

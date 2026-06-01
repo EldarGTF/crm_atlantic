@@ -29,6 +29,12 @@ if [ -f prisma/migrations/clients_v2.sql ]; then
     < prisma/migrations/clients_v2.sql
 fi
 
+if [ -f prisma/migrations/order_file_contract.sql ]; then
+  echo "Миграция OrderFileType CONTRACT..."
+  docker compose exec -T postgres psql -U crm -d crm_atlantic -v ON_ERROR_STOP=1 \
+    < prisma/migrations/order_file_contract.sql || true
+fi
+
 docker compose exec -T app npx prisma db push
 
 docker compose ps

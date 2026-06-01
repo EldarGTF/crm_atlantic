@@ -20,6 +20,8 @@ import { formatOrderNumber } from "@/lib/order-number";
 import { InstallationChecklist } from "@/components/installation/installation-checklist";
 import { parseChecklist } from "@/lib/installation-checklist";
 import { DeleteOrderButton } from "@/components/admin/delete-order-button";
+import { LinkButton } from "@/components/ui/link-button";
+import { FileText } from "lucide-react";
 
 const PAYMENT_STATUS = { UNPAID: "Не оплачен", PREPAID: "Предоплата", PAID: "Оплачен" };
 const PAYMENT_STATUS_COLORS = { UNPAID: "destructive", PREPAID: "default", PAID: "secondary" } as const;
@@ -58,6 +60,8 @@ export default async function OrderPage({ params }: Props) {
   const generalFiles = order.files.filter(
     (f) => !["WORK_ORDER_GLASS", "WORK_ORDER_PVC", "WORK_ORDER_ALUMINUM", "MATERIALS_LIST"].includes(f.type as string)
   );
+  const contractFiles = order.files.filter((f) => (f.type as string) === "CONTRACT");
+  const otherGeneralFiles = generalFiles.filter((f) => (f.type as string) !== "CONTRACT");
 
   const paid = order.payments.reduce((s, p) => s + Number(p.amount), 0);
   const debt = Number(order.totalAmount) - paid;
@@ -86,6 +90,11 @@ export default async function OrderPage({ params }: Props) {
               {PAYMENT_STATUS[order.paymentStatus]}
             </Badge>
             {order.act && <Badge variant="secondary">Акт подписан</Badge>}
+            {canEdit && (
+              <LinkButton href={`/orders/${id}/contract`} variant="outline" size="sm">
+                <FileText className="h-3.5 w-3.5 mr-1" /> Сформировать договор
+              </LinkButton>
+            )}
             {isAdmin && <DeleteOrderButton orderId={id} />}
           </div>
         </div>
@@ -350,12 +359,30 @@ export default async function OrderPage({ params }: Props) {
         </div>
       )}
 
+      {contractFiles.length > 0 && (
+        <div className="bg-white rounded-lg border p-4 space-y-2">
+          <h2 className="font-semibold text-gray-900">Договоры</h2>
+          {contractFiles.map((f) => (
+            <a
+              key={f.id}
+              href={f.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
+            >
+              <FileText className="h-4 w-4 shrink-0" />
+              {f.name}
+            </a>
+          ))}
+        </div>
+      )}
+
       {/* Прочие документы */}
       <div className="bg-white rounded-lg border p-4 space-y-3">
         <h2 className="font-semibold text-gray-900">Документы и файлы</h2>
         <FileUploader
           folder={`orders/${id}`}
-          existingFiles={generalFiles}
+          existingFiles={otherGeneralFiles}
           onUpload={canEdit ? addFile : undefined}
           onDelete={canEdit ? deleteOrderFile.bind(null, id) : undefined}
         />

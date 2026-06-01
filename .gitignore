@@ -43,3 +43,7 @@ yarn-error.log*
 next-env.d.ts
 
 /lib/generated/prisma
+
+/templates/contracts/_extract/
+/templates/contracts/t.zip
+test-contract-out.docx

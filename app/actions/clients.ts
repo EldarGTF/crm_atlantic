@@ -2,7 +2,10 @@
 
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth-guards";
-import { CLIENTS } from "@/lib/permissions";
+import { removeOrderFromDbAndStorage } from "@/lib/delete-order";
+import { getPrismaUserMessage } from "@/lib/prisma-errors";
+import { CLIENTS, STAFF_ADMIN } from "@/lib/permissions";
+import { deleteStoredFileByUrl } from "@/lib/storage-object";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -185,11 +188,79 @@ export async function getClient(id: string) {
     include: {
       leads: {
         orderBy: { createdAt: "desc" },
-        include: { manager: { select: { name: true } } },
+        include: {
+          manager: { select: { name: true } },
+          order: { select: { id: true } },
+        },
       },
       orders: {
         orderBy: { createdAt: "desc" },
       },
     },
   });
+}
+
+export async function deleteClient(clientId: string): Promise<{ error?: string }> {
+  await requireRole(STAFF_ADMIN);
+
+  const client = await prisma.client.findUnique({
+    where: { id: clientId },
+    include: {
+      leads: {
+        include: {
+          order: { select: { id: true } },
+          measurements: { include: { files: { select: { url: true } } } },
+        },
+      },
+    },
+  });
+  if (!client) return { error: "Клиент не найден" };
+
+  const orderIds = [
+    ...new Set(
+      client.leads.map((l) => l.order?.id).filter((id): id is string => Boolean(id)),
+    ),
+  ];
+
+  for (const orderId of orderIds) {
+    const result = await removeOrderFromDbAndStorage(orderId);
+    if ("error" in result) return { error: result.error };
+  }
+
+  for (const lead of client.leads) {
+    for (const m of lead.measurements) {
+      for (const f of m.files) {
+        await deleteStoredFileByUrl(f.url).catch(() => {});
+      }
+    }
+  }
+
+  const leadIds = client.leads.map((l) => l.id);
+  const measurementIds = client.leads.flatMap((l) => l.measurements.map((m) => m.id));
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      if (leadIds.length > 0) {
+        await tx.task.updateMany({ where: { leadId: { in: leadIds } }, data: { leadId: null } });
+      }
+      if (measurementIds.length > 0) {
+        await tx.measurementFile.deleteMany({
+          where: { measurementId: { in: measurementIds } },
+        });
+        await tx.measurement.deleteMany({ where: { leadId: { in: leadIds } } });
+      }
+      if (leadIds.length > 0) {
+        await tx.lead.deleteMany({ where: { clientId } });
+      }
+      await tx.client.delete({ where: { id: clientId } });
+    });
+  } catch (e) {
+    return { error: getPrismaUserMessage(e) ?? "Не удалось удалить клиента" };
+  }
+
+  revalidatePath("/clients");
+  revalidatePath("/leads");
+  revalidatePath("/orders");
+  revalidatePath("/archive");
+  redirect("/clients");
 }
