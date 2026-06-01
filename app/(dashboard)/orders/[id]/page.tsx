@@ -22,6 +22,7 @@ import { parseChecklist } from "@/lib/installation-checklist";
 import { DeleteOrderButton } from "@/components/admin/delete-order-button";
 import { LinkButton } from "@/components/ui/link-button";
 import { FileText } from "lucide-react";
+import { ContractFilesList } from "@/components/orders/contract-files-list";
 
 const PAYMENT_STATUS = { UNPAID: "Не оплачен", PREPAID: "Предоплата", PAID: "Оплачен" };
 const PAYMENT_STATUS_COLORS = { UNPAID: "destructive", PREPAID: "default", PAID: "secondary" } as const;
@@ -359,23 +360,11 @@ export default async function OrderPage({ params }: Props) {
         </div>
       )}
 
-      {contractFiles.length > 0 && (
-        <div className="bg-white rounded-lg border p-4 space-y-2">
-          <h2 className="font-semibold text-gray-900">Договоры</h2>
-          {contractFiles.map((f) => (
-            <a
-              key={f.id}
-              href={f.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
-            >
-              <FileText className="h-4 w-4 shrink-0" />
-              {f.name}
-            </a>
-          ))}
-        </div>
-      )}
+      <ContractFilesList
+        orderId={id}
+        files={contractFiles.map((f) => ({ id: f.id, name: f.name, url: f.url }))}
+        canDelete={canEdit}
+      />
 
       {/* Прочие документы */}
       <div className="bg-white rounded-lg border p-4 space-y-3">
