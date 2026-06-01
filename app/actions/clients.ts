@@ -6,15 +6,51 @@ import { CLIENTS } from "@/lib/permissions";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { ClientStatus } from "@/lib/generated/prisma/client";
+import { ClientStatus, ClientTemperature } from "@/lib/generated/prisma/client";
+import type { Prisma } from "@/lib/generated/prisma/client";
+import {
+  CLIENT_LIST_SORTS,
+  type ClientListSort,
+} from "@/lib/client-constants";
 import { normalizePhone, phonesMatch } from "@/lib/phone";
+
+function parseClientTemperature(value?: string): ClientTemperature | undefined {
+  if (value === ClientTemperature.COLD || value === ClientTemperature.WARM || value === ClientTemperature.HOT) {
+    return value;
+  }
+  return undefined;
+}
+
+function parseClientListSort(value?: string): ClientListSort {
+  return CLIENT_LIST_SORTS.includes(value as ClientListSort)
+    ? (value as ClientListSort)
+    : "created_desc";
+}
+
+function clientListOrderBy(sort: ClientListSort): Prisma.ClientOrderByWithRelationInput[] {
+  switch (sort) {
+    case "created_asc":
+      return [{ createdAt: "asc" }];
+    case "name_asc":
+      return [{ name: "asc" }];
+    case "name_desc":
+      return [{ name: "desc" }];
+    case "temperature_desc":
+      return [{ temperature: "desc" }, { createdAt: "desc" }];
+    case "temperature_asc":
+      return [{ temperature: "asc" }, { createdAt: "desc" }];
+    default:
+      return [{ createdAt: "desc" }];
+  }
+}
 
 const ClientSchema = z.object({
   name: z.string().min(2, "Минимум 2 символа"),
   phone: z.string().min(6, "Введите корректный номер"),
   email: z.string().email("Некорректный email").optional().or(z.literal("")),
   address: z.string().optional(),
-  status: z.nativeEnum(ClientStatus).default(ClientStatus.REGULAR),
+  status: z.nativeEnum(ClientStatus).default(ClientStatus.PRIVATE),
+  temperature: z.nativeEnum(ClientTemperature).default(ClientTemperature.COLD),
   notes: z.string().optional(),
 });
 
@@ -39,7 +75,8 @@ export async function createClient(_state: unknown, formData: FormData) {
     phone: formData.get("phone"),
     email: formData.get("email") || undefined,
     address: formData.get("address") || undefined,
-    status: formData.get("status") || ClientStatus.REGULAR,
+    status: formData.get("status") || ClientStatus.PRIVATE,
+    temperature: formData.get("temperature") || ClientTemperature.COLD,
     notes: formData.get("notes") || undefined,
   };
 
@@ -64,6 +101,7 @@ export async function createClient(_state: unknown, formData: FormData) {
       email: parsed.data.email || null,
       address: parsed.data.address || null,
       status: parsed.data.status,
+      temperature: parsed.data.temperature,
       notes: parsed.data.notes || null,
     },
   });
@@ -80,7 +118,8 @@ export async function updateClient(id: string, _state: unknown, formData: FormDa
     phone: formData.get("phone"),
     email: formData.get("email") || undefined,
     address: formData.get("address") || undefined,
-    status: formData.get("status") || ClientStatus.REGULAR,
+    status: formData.get("status") || ClientStatus.PRIVATE,
+    temperature: formData.get("temperature") || ClientTemperature.COLD,
     notes: formData.get("notes") || undefined,
   };
 
@@ -97,6 +136,7 @@ export async function updateClient(id: string, _state: unknown, formData: FormDa
       email: parsed.data.email || null,
       address: parsed.data.address || null,
       status: parsed.data.status,
+      temperature: parsed.data.temperature,
       notes: parsed.data.notes || null,
     },
   });
@@ -106,20 +146,35 @@ export async function updateClient(id: string, _state: unknown, formData: FormDa
   redirect(`/clients/${id}`);
 }
 
-export async function getClients(search?: string) {
+export async function getClients(
+  search?: string,
+  temperatureFilter?: string,
+  sortParam?: string,
+) {
   await requireRole(CLIENTS);
+
+  const temperature = parseClientTemperature(temperatureFilter);
+  const sort = parseClientListSort(sortParam);
+
+  const searchWhere: Prisma.ClientWhereInput | undefined = search
+    ? {
+        OR: [
+          { name: { contains: search, mode: "insensitive" } },
+          { phone: { contains: search } },
+          { email: { contains: search, mode: "insensitive" } },
+        ],
+      }
+    : undefined;
+
+  const where: Prisma.ClientWhereInput | undefined =
+    searchWhere && temperature
+      ? { AND: [searchWhere, { temperature }] }
+      : searchWhere ?? (temperature ? { temperature } : undefined);
+
   return prisma.client.findMany({
-    where: search
-      ? {
-          OR: [
-            { name: { contains: search, mode: "insensitive" } },
-            { phone: { contains: search } },
-            { email: { contains: search, mode: "insensitive" } },
-          ],
-        }
-      : undefined,
+    where,
     include: { _count: { select: { leads: true, orders: true } } },
-    orderBy: { createdAt: "desc" },
+    orderBy: clientListOrderBy(sort),
   });
 }
 

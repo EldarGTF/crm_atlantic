@@ -6,17 +6,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CLIENT_TEMPERATURE_LABELS } from "@/lib/client-constants";
 
-const STATUS_LABELS = {
-  REGULAR:   "Обычный",
-  RETURNING: "Постоянный",
-  VIP:       "VIP",
-};
+import { CLIENT_STATUS_LABELS } from "@/lib/client-constants";
 
 type Client = {
   id: string; name: string; phone: string;
   email: string | null; address: string | null;
-  status: "REGULAR" | "RETURNING" | "VIP"; notes: string | null;
+  status: "PRIVATE" | "LEGAL" | "GOVERNMENT";
+  temperature: "COLD" | "WARM" | "HOT";
+  notes: string | null;
 };
 
 type Props = {
@@ -65,18 +64,41 @@ export function ClientForm({ action, client }: Props) {
         </div>
 
         <div className="space-y-1.5">
-          <Label className="text-sm font-medium text-slate-700">Статус клиента</Label>
-          <Select name="status" defaultValue={client?.status ?? "REGULAR"} items={STATUS_LABELS}>
+          <Label className="text-sm font-medium text-slate-700">Тип клиента</Label>
+          <Select name="status" defaultValue={client?.status ?? "PRIVATE"} items={CLIENT_STATUS_LABELS}>
             <SelectTrigger className="h-10 bg-slate-50 border-slate-200">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {Object.entries(STATUS_LABELS).map(([value, label]) => (
+              {Object.entries(CLIENT_STATUS_LABELS).map(([value, label]) => (
                 <SelectItem key={value} value={value}>{label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label className="text-sm font-medium text-slate-700">Готовность к сделке</Label>
+        <Select
+          name="temperature"
+          defaultValue={client?.temperature ?? "COLD"}
+          items={CLIENT_TEMPERATURE_LABELS}
+        >
+          <SelectTrigger className="h-10 bg-slate-50 border-slate-200">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {Object.entries(CLIENT_TEMPERATURE_LABELS).map(([value, label]) => (
+              <SelectItem key={value} value={value}>
+                {label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <p className="text-xs text-slate-500">
+          Холодный — только интерес; тёплый — сравнивает; горячий — готов к замеру или заказу
+        </p>
       </div>
 
       <div className="space-y-1.5">

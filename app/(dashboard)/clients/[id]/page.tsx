@@ -2,13 +2,16 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getClient } from "@/app/actions/clients";
 import { Badge } from "@/components/ui/badge";
+import { ClientTemperatureBadge } from "@/components/clients/client-temperature-badge";
+import {
+  CLIENT_STATUS_BADGE_VARIANT,
+  CLIENT_STATUS_LABELS,
+  CLIENT_TEMPERATURE_HINTS,
+} from "@/lib/client-constants";
 import { Separator } from "@/components/ui/separator";
 import { LinkButton } from "@/components/ui/link-button";
 import { ChevronLeft, Phone, Mail, MapPin, Plus, Pencil } from "lucide-react";
 import { LEAD_STATUS_LABELS, LEAD_STATUS_COLORS } from "@/lib/lead-constants";
-
-const STATUS_LABELS = { REGULAR: "Обычный", RETURNING: "Постоянный", VIP: "VIP" };
-const STATUS_COLORS = { REGULAR: "secondary", RETURNING: "default", VIP: "destructive" } as const;
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -29,13 +32,20 @@ export default async function ClientPage({ params }: Props) {
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="text-2xl font-bold text-gray-900">{client.name}</h1>
-            <Badge variant={STATUS_COLORS[client.status]}>{STATUS_LABELS[client.status]}</Badge>
+            <ClientTemperatureBadge temperature={client.temperature} />
+            <Badge variant={CLIENT_STATUS_BADGE_VARIANT[client.status]}>
+              {CLIENT_STATUS_LABELS[client.status]}
+            </Badge>
           </div>
           <LinkButton href={`/clients/${id}/edit`} variant="outline" size="sm">
             <Pencil className="h-3.5 w-3.5 mr-1" /> Редактировать
           </LinkButton>
         </div>
       </div>
+
+      <p className="text-sm text-gray-500 -mt-2">
+        {CLIENT_TEMPERATURE_HINTS[client.temperature]}
+      </p>
 
       {/* Контакты */}
       <div className="bg-white rounded-lg border p-4 space-y-2">
