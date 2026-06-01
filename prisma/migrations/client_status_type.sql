@@ -1,5 +1,5 @@
--- Миграция типа клиента: REGULAR/RETURNING/VIP → PRIVATE/LEGAL/GOVERNMENT
--- Выполнить на VPS один раз: docker compose exec -T db psql -U crm -d crm < prisma/migrations/client_status_type.sql
+-- Устарело: используйте prisma/migrations/clients_v2.sql (температура + тип клиента)
+-- VPS: docker compose exec -T postgres psql -U crm -d crm_atlantic < prisma/migrations/clients_v2.sql
 
 ALTER TYPE "ClientStatus" RENAME TO "ClientStatus_old";
 

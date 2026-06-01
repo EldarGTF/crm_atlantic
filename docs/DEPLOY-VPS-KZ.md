@@ -121,8 +121,12 @@ bash scripts/deploy.sh
 docker compose down
 docker compose build app
 docker compose up -d
+# после обновления с полями клиента (температура / тип):
+docker compose exec -T postgres psql -U crm -d crm_atlantic < prisma/migrations/clients_v2.sql
 docker compose exec app npx prisma db push
 ```
+
+Если страница **Клиенты** не открывается после обновления — почти всегда не применена `clients_v2.sql` (сервис `postgres`, БД `crm_atlantic`, не `db` / `crm`).
 
 Не используйте `docker-compose up --force-recreate` на старом 1.29.
 

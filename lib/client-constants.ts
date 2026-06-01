@@ -14,6 +14,17 @@ export const CLIENT_STATUS_BADGE_VARIANT: Record<
   GOVERNMENT: "destructive",
 };
 
+/** Подпись типа клиента; fallback для старых значений в БД до миграции. */
+export function clientStatusLabel(status: string): string {
+  return CLIENT_STATUS_LABELS[status] ?? status;
+}
+
+export function clientStatusBadgeVariant(
+  status: string,
+): "secondary" | "default" | "destructive" {
+  return CLIENT_STATUS_BADGE_VARIANT[status] ?? "secondary";
+}
+
 /** Температура лида: насколько клиент готов к покупке (не путать с типом клиента). */
 export const CLIENT_TEMPERATURE_LABELS: Record<string, string> = {
   COLD: "Холодный",

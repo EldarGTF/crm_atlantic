@@ -7,9 +7,9 @@ import { Input } from "@/components/ui/input";
 import { LinkButton } from "@/components/ui/link-button";
 import {
   CLIENT_LIST_SORTS,
-  CLIENT_STATUS_BADGE_VARIANT,
-  CLIENT_STATUS_LABELS,
   CLIENT_TEMPERATURE_LABELS,
+  clientStatusBadgeVariant,
+  clientStatusLabel,
   clientsListHref,
   type ClientListSort,
 } from "@/lib/client-constants";
@@ -106,8 +106,8 @@ export default async function ClientsPage({ searchParams }: Props) {
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-semibold text-gray-900">{client.name}</span>
                     <ClientTemperatureBadge temperature={client.temperature} />
-                    <Badge variant={CLIENT_STATUS_BADGE_VARIANT[client.status]}>
-                      {CLIENT_STATUS_LABELS[client.status]}
+                    <Badge variant={clientStatusBadgeVariant(client.status)}>
+                      {clientStatusLabel(client.status)}
                     </Badge>
                   </div>
                   <div className="flex items-center gap-4 mt-1 text-sm text-gray-500 flex-wrap">

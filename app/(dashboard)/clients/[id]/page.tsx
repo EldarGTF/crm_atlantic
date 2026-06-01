@@ -4,9 +4,9 @@ import { getClient } from "@/app/actions/clients";
 import { Badge } from "@/components/ui/badge";
 import { ClientTemperatureBadge } from "@/components/clients/client-temperature-badge";
 import {
-  CLIENT_STATUS_BADGE_VARIANT,
-  CLIENT_STATUS_LABELS,
   CLIENT_TEMPERATURE_HINTS,
+  clientStatusBadgeVariant,
+  clientStatusLabel,
 } from "@/lib/client-constants";
 import { Separator } from "@/components/ui/separator";
 import { LinkButton } from "@/components/ui/link-button";
@@ -33,8 +33,8 @@ export default async function ClientPage({ params }: Props) {
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="text-2xl font-bold text-gray-900">{client.name}</h1>
             <ClientTemperatureBadge temperature={client.temperature} />
-            <Badge variant={CLIENT_STATUS_BADGE_VARIANT[client.status]}>
-              {CLIENT_STATUS_LABELS[client.status]}
+            <Badge variant={clientStatusBadgeVariant(client.status)}>
+              {clientStatusLabel(client.status)}
             </Badge>
           </div>
           <LinkButton href={`/clients/${id}/edit`} variant="outline" size="sm">

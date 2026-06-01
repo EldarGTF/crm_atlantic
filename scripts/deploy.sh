@@ -22,6 +22,13 @@ docker compose up -d
 
 echo "Ожидание postgres..."
 sleep 5
+
+if [ -f prisma/migrations/clients_v2.sql ]; then
+  echo "Миграция clients_v2 (температура + тип клиента)..."
+  docker compose exec -T postgres psql -U crm -d crm_atlantic -v ON_ERROR_STOP=1 \
+    < prisma/migrations/clients_v2.sql
+fi
+
 docker compose exec -T app npx prisma db push
 
 docker compose ps
